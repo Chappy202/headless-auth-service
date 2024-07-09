@@ -1,0 +1,19 @@
+meta {
+  name: Disable MFA
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{url}}/auth/disable-mfa
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

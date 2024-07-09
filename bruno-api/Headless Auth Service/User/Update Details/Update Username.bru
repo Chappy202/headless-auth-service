@@ -1,0 +1,25 @@
+meta {
+  name: Update Username
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{url}}/users/profile
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "username": "newusername"
+  }
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Get User MFA Status
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{url}}/admin/users/:userId/mfa-status
+  body: none
+  auth: bearer
+}
+
+params:path {
+  userId: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

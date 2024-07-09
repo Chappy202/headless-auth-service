@@ -1,0 +1,19 @@
+meta {
+  name: Enable MFA
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/auth/enable-mfa
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Assign role to user
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{url}}/admin/users/:userId/roles/:roleId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  roleId: 1
+  userId: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

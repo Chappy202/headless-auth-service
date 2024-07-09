@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Headless Auth Service",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

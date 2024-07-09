@@ -1,0 +1,26 @@
+meta {
+  name: Update email and enable MFA
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{url}}/users/profile
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "email": "newemail@example.com",
+    "mfaEnabled": true
+  }
+}

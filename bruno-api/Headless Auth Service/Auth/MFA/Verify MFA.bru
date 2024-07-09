@@ -1,0 +1,25 @@
+meta {
+  name: Verify MFA
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{url}}/auth/verify-mfa
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "token": "MFA_TOKEN_HERE"
+  }
+}

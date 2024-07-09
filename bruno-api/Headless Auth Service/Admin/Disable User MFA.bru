@@ -1,0 +1,23 @@
+meta {
+  name: Disable User MFA
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{url}}/admin/users/:userId/disable-mfa
+  body: none
+  auth: bearer
+}
+
+params:path {
+  userId: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
