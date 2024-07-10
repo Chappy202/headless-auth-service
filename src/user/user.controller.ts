@@ -17,4 +17,9 @@ export class UserController {
   updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
     return this.userService.updateProfile(req.user.userId, updateProfileDto);
   }
+
+  @Get('sessions')
+  getSessions(@Request() req) {
+    return this.userService.getSessions(req.user.userId);
+  }
 }

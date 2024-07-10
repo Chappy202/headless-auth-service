@@ -7,9 +7,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { DrizzleService } from '../drizzle/drizzle.service';
 import { EmailService } from 'src/email/email.service';
-import { users, sessions, loginHistory, blacklistedTokens } from '../db/schema';
-import { desc, eq, or } from 'drizzle-orm';
+import { users, sessions, loginHistory, blacklistedTokens, apiKeys } from '../db/schema';
+import { desc, eq, isNull, lte, or, and } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
+import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -68,7 +69,7 @@ export class AuthService {
     });
     const refresh_token = this.jwtService.sign(payload, {
       expiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
-      secret: this.configService.get<string>('JWT_SECRET'),
+      secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
     });
 
     await this.drizzle.db.insert(sessions).values({
@@ -104,6 +105,20 @@ export class AuthService {
     };
   }
 
+  async introspectToken(token: string) {
+    try {
+      const payload = this.jwtService.verify(token, { secret: this.configService.get<string>('JWT_SECRET')});
+      const isBlacklisted = await this.isTokenBlacklisted(token);
+      return {
+        active: !isBlacklisted,
+        ...payload,
+      };
+    } catch (error) {
+      console.error(error);
+      return { active: false };
+    }
+  }
+
   async getLocationFromIp(ip: string): Promise<string> {
     // Implement IP geolocation logic here
     // You might want to use a third-party service or library for this
@@ -113,7 +128,7 @@ export class AuthService {
   async refreshToken(refreshToken: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
       });
 
       const session = await this.drizzle.db
@@ -133,7 +148,7 @@ export class AuthService {
         },
         {
           secret: this.configService.get<string>('JWT_SECRET'),
-          expiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d', // or whatever duration you prefer
+          expiresIn: process.env.JWT_EXPIRATION || '2h', // or whatever duration you prefer
         },
       );
 
@@ -284,5 +299,48 @@ export class AuthService {
       .where(eq(users.id, userId));
 
     return { message: 'MFA disabled successfully' };
+  }
+
+  async createApiKey(name: string, expiresAt?: Date): Promise<string> {
+    const key = uuidv4();
+    await this.drizzle.db.insert(apiKeys).values({
+      name,
+      key,
+      expiresAt: expiresAt || null,
+    });
+    return key;
+  }
+
+  async validateApiKey(key: string): Promise<boolean> {
+    const [apiKey] = await this.drizzle.db
+      .select()
+      .from(apiKeys)
+      .where(
+        and(
+          eq(apiKeys.key, key),
+          or(
+            isNull(apiKeys.expiresAt),
+            lte(apiKeys.expiresAt, new Date())
+          )
+        )
+      )
+      .limit(1);
+
+    if (apiKey) {
+      await this.drizzle.db
+        .update(apiKeys)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(apiKeys.id, apiKey.id));
+      return true;
+    }
+    return false;
+  }
+
+  async listApiKeys() {
+    return this.drizzle.db.select().from(apiKeys);
+  }
+
+  async revokeApiKey(id: number) {
+    await this.drizzle.db.delete(apiKeys).where(eq(apiKeys.id, id));
   }
 }

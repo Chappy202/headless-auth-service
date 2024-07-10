@@ -1,4 +1,13 @@
-import { Controller, Post, UseGuards, Request, Body, Ip, Headers, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UseGuards,
+  Request,
+  Body,
+  Ip,
+  Headers,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ResetPasswordDto } from 'src/admin/dtos/reset-password.dto';
@@ -14,6 +23,12 @@ export class AuthController {
     return this.authService.login(req.user, ip, mfaToken);
   }
 
+  @Post('introspect')
+  @UseGuards(AuthGuard('api-key'))
+  async introspectToken(@Body('token') token: string) {
+    return this.authService.introspectToken(token);
+  }
+
   @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   async logout(@Request() req) {
@@ -23,12 +38,11 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refreshToken(@Headers('authorization') authHeader: string) {
-    if (!authHeader) {
+  async refreshToken(@Body('token') token: string) {
+    if (!token) {
       throw new UnauthorizedException('No refresh token provided');
     }
-    const refreshToken = authHeader.split(' ')[1]; // Assuming "Bearer <token>" format
-    return this.authService.refreshToken(refreshToken);
+    return this.authService.refreshToken(token);
   }
 
   @Post('register')

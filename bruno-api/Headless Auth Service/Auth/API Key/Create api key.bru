@@ -1,0 +1,21 @@
+meta {
+  name: Create api key
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{url}}/api-keys
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "name": "Backend"
+  }
+}

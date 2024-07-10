@@ -64,9 +64,9 @@ MFA_APP_NAME=YourAuthApp
 - `POST /auth/login` - Authenticate a user
 - `POST /auth/refresh` - Refresh access token
 - `POST /auth/logout` - Logout (blacklist token)
-- `POST /auth/forgot-password` - Request password reset
+- `POST /auth/request-password-reset` - Request password reset
 - `POST /auth/reset-password` - Reset password
-- `POST /auth/verify-email` - Verify email address
+- `POST /auth/verify-email` - Verify email address - WIP
 
 ### Multi-Factor Authentication
 
@@ -78,15 +78,37 @@ MFA_APP_NAME=YourAuthApp
 
 - `GET /users/profile` - Get user profile
 - `PUT /users/profile` - Update user profile
+- `GET /users/sessions` - Get user sessions
 
 ### Admin
 
+- `GET /admin/users` - Get all users
 - `POST /admin/users` - Create a new user
+- `GET /admin/users/:id` - Get a user
 - `PUT /admin/users/:id` - Update a user
-- `DELETE /admin/users/:id` - Delete a user
+- `DELETE /admin/users/:id` - Delete a user - WIP
 - `PUT /admin/users/:id/reset-password` - Reset user's password
 - `PUT /admin/users/:id/disable-mfa` - Disable MFA for a user
 - `GET /admin/users/:id/mfa-status` - Get MFA status for a user
+- `GET /admin/users/:id/roles` - Get roles for a user - WIP
+- `PUT /admin/users/:id/roles` - Update roles for a user - WIP
+- `POST /admin/users/:id/roles/:roleId` - Add a role to a user
+- `DELETE /admin/users/:id/roles/:roleId` - Remove a role from a user
+- `GET /admin/users/:id/permissions` - Get permissions for a user - WIP
+- `POST /admin/users/:id/permissions/:permissionId` - Add a permission to a user
+- `DELETE /admin/users/:id/permissions/:permissionId` - Remove a permission from a user
+- `GET /admin/sessions` - Get all sessions (All currently logged in users) - WIP
+- `PUT /admin/users/:id/disable-mfa` - Disable MFA for a user
+- `GET /admin/users/:id/mfa-status` - Get MFA status for a user
+- `GET /admin/roles` - Get all roles - WIP
+- `POST /admin/roles` - Create a new role
+- `GET /admin/roles/:id` - Get a role - WIP
+- `PUT /admin/roles/:id` - Update a role - WIP
+- `DELETE /admin/roles/:id` - Delete a role - WIP
+- `GET /admin/permissions` - Get all permissions - WIP
+- `POST /admin/permissions` - Create a new permission
+- `GET /admin/permissions/:id` - Get a permission - WIP
+- `PUT /admin/permissions/:id` - Update a permission - WIP
 
 ## Security Features
 

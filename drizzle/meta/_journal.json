@@ -8,6 +8,13 @@
       "when": 1720509850408,
       "tag": "0000_lazy_banshee",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1720617321198,
+      "tag": "0001_brief_vulcan",
+      "breakpoints": true
     }
   ]
 }

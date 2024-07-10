@@ -1,0 +1,15 @@
+meta {
+  name: Get all api keys
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{url}}/api-keys
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

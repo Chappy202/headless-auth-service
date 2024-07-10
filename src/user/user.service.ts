@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '../drizzle/drizzle.service';
-import { users } from '../db/schema';
+import { users, sessions } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { UpdateProfileDto } from './dtos/profile.dto';
 import * as bcrypt from 'bcrypt';
@@ -31,6 +31,11 @@ export class UserService {
   
     await this.drizzle.db.update(users).set(updateValues).where(eq(users.id, id));
     return this.findOne(id);
+  }
+
+  async getSessions(userId: number) {
+    const userSessions = await this.drizzle.db.select().from(sessions).where(eq(sessions.userId, userId));
+    return userSessions;
   }
 
 }

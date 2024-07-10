@@ -8,6 +8,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { MfaService } from 'src/mfa/mfa.service';
 import { DrizzleModule } from 'src/drizzle/drizzle.module';
 import { EmailModule } from 'src/email/email.module';
+import { ApiKeyStrategy } from './strategies/api-key.strategy';
+import { ApiKeyController } from './api-key.controller';
 
 @Module({
   imports: [
@@ -19,8 +21,8 @@ import { EmailModule } from 'src/email/email.module';
     DrizzleModule,
     EmailModule
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService],
-  controllers: [AuthController],
+  providers: [AuthService, LocalStrategy, JwtStrategy, MfaService, ApiKeyStrategy],
+  controllers: [AuthController, ApiKeyController],
   exports: [AuthService],
 })
 export class AuthModule {}

@@ -1,13 +1,20 @@
-import { serial, text, timestamp, varchar, boolean, integer, pgSchema } from 'drizzle-orm/pg-core';
+import {
+  serial,
+  text,
+  timestamp,
+  varchar,
+  boolean,
+  integer,
+  pgSchema,
+} from 'drizzle-orm/pg-core';
 
-export const authSchema = pgSchema("auth");
+export const authSchema = pgSchema('auth');
 
 export const users = authSchema.table('users', {
   id: serial('id').primaryKey(),
   username: varchar('username', { length: 255 }).notNull().unique(),
   email: varchar('email', { length: 255 }).unique(),
   password: text('password').notNull(),
-  //role: varchar('role', { length: 50 }).notNull().default('user'),
   isEmailVerified: boolean('is_email_verified').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow(),
   mfaEnabled: boolean('mfa_enabled').notNull().default(false),
@@ -53,7 +60,16 @@ export const userRoles = authSchema.table('user_roles', {
 });
 
 export const blacklistedTokens = authSchema.table('blacklisted_tokens', {
-    id: serial('id').primaryKey(),
-    token: text('token').notNull(),
-    expiresAt: timestamp('expires_at').notNull(),
-  });
+  id: serial('id').primaryKey(),
+  token: text('token').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+export const apiKeys = authSchema.table('api_keys', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  key: varchar('key', { length: 64 }).notNull().unique(),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  lastUsedAt: timestamp('last_used_at'),
+});

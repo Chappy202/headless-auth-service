@@ -17,3 +17,14 @@ headers {
 auth:bearer {
   token: {{refresh_token}}
 }
+
+body:json {
+  {
+    "token": "{{refresh_token}}"
+  }
+}
+
+tests {
+  let data = res.getBody();
+  bru.setVar("access_token", data.access_token);
+}
