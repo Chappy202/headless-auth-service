@@ -163,7 +163,7 @@ export class AuthService {
     email?: string;
     password: string;
   }) {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
     const [user] = await this.drizzle.db
       .insert(users)
       .values({
@@ -222,7 +222,7 @@ export class AuthService {
       const payload = this.jwtService.verify(resetToken);
       const hashedPassword = await bcrypt.hash(
         newPassword,
-        process.env.SALT_ROUNDS || 10,
+        process.env.SALT_ROUNDS || 12,
       );
 
       await this.drizzle.db
