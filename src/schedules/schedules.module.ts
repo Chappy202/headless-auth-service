@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from 'src/auth/services/auth.service';
 import { CleanupService } from './services/cleanup.service';
-import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
-  providers: [AuthService, CleanupService],
-  imports: [ScheduleModule.forRoot()],
+  providers: [CleanupService],
+  imports: [AuthModule],
 })
 export class SchedulesModule {}

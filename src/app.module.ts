@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RedisModule } from './redis/redis.module';
+import { SchedulesModule } from './schedules/schedules.module';
 
 @Module({
   imports: [
@@ -19,7 +21,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     UserModule,
     AdminModule,
-    ScheduleModule,
+    ScheduleModule.forRoot(),
+    SchedulesModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService],

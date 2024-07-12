@@ -89,6 +89,7 @@ export const blacklistedTokens = authSchema.table('blacklisted_tokens', {
   id: serial('id').primaryKey(),
   token: text('token').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const apiKeys = authSchema.table('api_keys', {

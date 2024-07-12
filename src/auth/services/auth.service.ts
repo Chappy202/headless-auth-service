@@ -16,6 +16,7 @@ import {
 import { desc, eq, or, and, lt } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
 import { ConfigService } from '@nestjs/config';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +26,7 @@ export class AuthService {
     private emailService: EmailService,
     private mfaService: MfaService,
     private configService: ConfigService,
+    private redisService: RedisService,
   ) {}
 
   async validateUser(usernameOrEmail: string, password: string): Promise<any> {
@@ -306,13 +308,34 @@ export class AuthService {
 
   async blacklistToken(token: string) {
     const decoded = this.jwtService.decode(token) as { exp: number };
+    const expiresAt = new Date(decoded.exp * 1000);
+
     await this.drizzle.db.insert(blacklistedTokens).values({
       token,
-      expiresAt: new Date(decoded.exp * 1000),
+      expiresAt,
     });
+
+    // Add to Redis cache
+    await this.redisService
+      .getClient()
+      .set(
+        `blacklisted_token:${token}`,
+        '1',
+        'EX',
+        Math.floor((expiresAt.getTime() - Date.now()) / 1000),
+      );
   }
 
   async isTokenBlacklisted(token: string): Promise<boolean> {
+    // Check Redis cache first
+    const cachedResult = await this.redisService
+      .getClient()
+      .get(`blacklisted_token:${token}`);
+    if (cachedResult) {
+      return true;
+    }
+
+    // If not in cache, check database
     const [blacklistedToken] = await this.drizzle.db
       .select()
       .from(blacklistedTokens)
