@@ -34,6 +34,10 @@ export const sessions = authSchema.table('sessions', {
   token: text('token').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  lastUsedAt: timestamp('last_used_at'),
+  userAgent: text('user_agent'),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  isActive: boolean('is_active').default(true),
 });
 
 export const loginHistory = authSchema.table('login_history', {
@@ -41,6 +45,7 @@ export const loginHistory = authSchema.table('login_history', {
   userId: integer('user_id').references(() => users.id),
   ip: varchar('ip', { length: 45 }).notNull(),
   location: varchar('location', { length: 255 }),
+  userAgent: text('user_agent'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

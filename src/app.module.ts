@@ -7,6 +7,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { AdminModule } from './admin/admin.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AdminModule } from './admin/admin.module';
     AuthModule,
     UserModule,
     AdminModule,
+    ScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

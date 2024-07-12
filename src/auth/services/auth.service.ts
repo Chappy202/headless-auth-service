@@ -13,7 +13,7 @@ import {
   loginHistory,
   blacklistedTokens,
 } from '../../db/schema';
-import { desc, eq, or } from 'drizzle-orm';
+import { desc, eq, or, and, lt } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
 import { ConfigService } from '@nestjs/config';
 
@@ -53,7 +53,7 @@ export class AuthService {
     return result;
   }
 
-  async login(user: any, ip: string, mfaToken?: string) {
+  async login(user: any, ip: string, userAgent: string, mfaToken?: string) {
     if (user.mfaEnabled) {
       if (!mfaToken) {
         return { requireMfa: true };
@@ -76,16 +76,26 @@ export class AuthService {
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
     });
 
-    await this.drizzle.db.insert(sessions).values({
-      userId: user.id,
-      token: refresh_token,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    });
+    // Create a new session
+    const [session] = await this.drizzle.db
+      .insert(sessions)
+      .values({
+        userId: user.id,
+        token: refresh_token,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        userAgent,
+        ipAddress: ip,
+      })
+      .returning();
+
+    // Limit active sessions
+    await this.limitActiveSessions(user.id);
 
     // Record login history
     await this.drizzle.db.insert(loginHistory).values({
       userId: user.id,
       ip,
+      userAgent,
       location: await this.getLocationFromIp(ip),
     });
 
@@ -106,7 +116,67 @@ export class AuthService {
     return {
       access_token,
       refresh_token,
+      sessionId: session.id,
     };
+  }
+
+  async logout(token: string) {
+    await this.blacklistToken(token);
+    // Find and deactivate the session
+    const [session] = await this.drizzle.db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.token, token))
+      .limit(1);
+
+    if (session) {
+      await this.revokeSession(session.id);
+    }
+  }
+
+  async limitActiveSessions(userId: number, maxSessions: number = 8) {
+    const activeSessions = await this.drizzle.db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.userId, userId), eq(sessions.isActive, true)))
+      .orderBy(desc(sessions.lastUsedAt));
+
+    if (activeSessions.length > maxSessions) {
+      const sessionsToDeactivate = activeSessions.slice(maxSessions);
+      for (const session of sessionsToDeactivate) {
+        await this.revokeSession(session.id);
+      }
+    }
+  }
+
+  async getUserSessions(userId: number) {
+    return this.drizzle.db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.userId, userId));
+  }
+
+  async revokeSession(sessionId: number) {
+    const [session] = await this.drizzle.db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.id, sessionId))
+      .returning();
+
+    if (session) {
+      await this.blacklistToken(session.token);
+    }
+  }
+
+  async revokeAllUserSessions(userId: number) {
+    const userSessions = await this.drizzle.db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.userId, userId), eq(sessions.isActive, true)));
+
+    for (const session of userSessions) {
+      await this.revokeSession(session.id);
+    }
   }
 
   async getLocationFromIp(ip: string): Promise<string> {
@@ -115,19 +185,21 @@ export class AuthService {
     return 'Unknown';
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string, userAgent: string, ip: string) {
     try {
       const payload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
       });
 
-      const session = await this.drizzle.db
+      const [session] = await this.drizzle.db
         .select()
         .from(sessions)
-        .where(eq(sessions.token, refreshToken))
+        .where(
+          and(eq(sessions.token, refreshToken), eq(sessions.isActive, true)),
+        )
         .limit(1);
 
-      if (session.length === 0) {
+      if (!session) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -138,9 +210,15 @@ export class AuthService {
         },
         {
           secret: this.configService.get<string>('JWT_SECRET'),
-          expiresIn: process.env.JWT_EXPIRATION || '2h', // or whatever duration you prefer
+          expiresIn: process.env.JWT_EXPIRATION || '2h',
         },
       );
+
+      // Update session
+      await this.drizzle.db
+        .update(sessions)
+        .set({ lastUsedAt: new Date(), userAgent, ipAddress: ip })
+        .where(eq(sessions.id, session.id));
 
       return { access_token: newAccessToken };
     } catch (error) {
@@ -242,5 +320,19 @@ export class AuthService {
       .limit(1);
 
     return !!blacklistedToken;
+  }
+
+  async cleanupExpiredTokens() {
+    const now = new Date();
+
+    // Remove expired tokens from the database
+    const expiredTokens = await this.drizzle.db
+      .delete(blacklistedTokens)
+      .where(lt(blacklistedTokens.expiresAt, now))
+      .returning();
+
+    console.log(`Cleaned up ${expiredTokens.length} expired tokens`);
+
+    return expiredTokens.length;
   }
 }
