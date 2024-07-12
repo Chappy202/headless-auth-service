@@ -6,9 +6,16 @@ import {
   boolean,
   integer,
   pgSchema,
+  pgEnum,
 } from 'drizzle-orm/pg-core';
 
 export const authSchema = pgSchema('auth');
+
+export const permissionTypeEnum = pgEnum('permission_type', [
+  'admin',
+  'read',
+  'write',
+]);
 
 export const users = authSchema.table('users', {
   id: serial('id').primaryKey(),
@@ -37,6 +44,12 @@ export const loginHistory = authSchema.table('login_history', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const resources = authSchema.table('resources', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 50 }).notNull().unique(),
+  description: text('description'),
+});
+
 export const roles = authSchema.table('roles', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 50 }).notNull().unique(),
@@ -44,12 +57,20 @@ export const roles = authSchema.table('roles', {
 
 export const permissions = authSchema.table('permissions', {
   id: serial('id').primaryKey(),
-  name: varchar('name', { length: 50 }).notNull().unique(),
+  resourceId: integer('resource_id').references(() => resources.id),
+  type: permissionTypeEnum('type').notNull(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
 });
 
 export const rolePermissions = authSchema.table('role_permissions', {
   id: serial('id').primaryKey(),
   roleId: integer('role_id').references(() => roles.id),
+  permissionId: integer('permission_id').references(() => permissions.id),
+});
+
+export const userPermissions = authSchema.table('user_permissions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id),
   permissionId: integer('permission_id').references(() => permissions.id),
 });
 

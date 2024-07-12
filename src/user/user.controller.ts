@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Put,
-  UseGuards,
-  Request,
-  Body,
-  Param,
-} from '@nestjs/common';
+import { Controller, Get, Put, UseGuards, Request, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dtos/profile.dto';
@@ -29,15 +21,5 @@ export class UserController {
   @Get('sessions')
   getSessions(@Request() req) {
     return this.userService.getSessions(req.user.userId);
-  }
-
-  @Get(':id/permissions')
-  getPermissions(@Param('id') id: number) {
-    return this.userService.getPermissions(id);
-  }
-
-  @Get(':id/roles')
-  getRoles(@Param('id') id: number) {
-    return this.userService.getRoles(id);
   }
 }

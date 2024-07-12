@@ -14,6 +14,7 @@ import { MFAAuthService } from './services/mfa-auth.service';
 import { BackendAuthService } from './services/backend-auth.service';
 import { BackendAuthController } from './controllers/backend-auth.controller';
 import { MFAController } from './controllers/mfa.controller';
+import { PermissionService } from './services/permission.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { MFAController } from './controllers/mfa.controller';
     JwtStrategy,
     MfaService,
     ApiKeyStrategy,
+    PermissionService,
   ],
   controllers: [
     AuthController,

@@ -1,13 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '../drizzle/drizzle.service';
-import {
-  users,
-  sessions,
-  permissions,
-  userRoles,
-  roles,
-  rolePermissions,
-} from '../db/schema';
+import { users, sessions } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { UpdateProfileDto } from './dtos/profile.dto';
 import * as bcrypt from 'bcrypt';
@@ -57,31 +50,5 @@ export class UserService {
       .from(sessions)
       .where(eq(sessions.userId, userId));
     return userSessions;
-  }
-
-  async getPermissions(userId: number) {
-    const userPermissions = await this.drizzle.db
-      .select({
-        permissionName: permissions.name,
-      })
-      .from(userRoles)
-      .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .innerJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(userRoles.userId, userId));
-
-    return userPermissions.map((p) => p.permissionName);
-  }
-
-  async getRoles(userId: number) {
-    const userRolesResult = await this.drizzle.db
-      .select({
-        roleName: roles.name,
-      })
-      .from(userRoles)
-      .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(eq(userRoles.userId, userId));
-
-    return userRolesResult.map((r) => r.roleName);
   }
 }
