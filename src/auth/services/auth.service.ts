@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { DrizzleService } from '../drizzle/drizzle.service';
+import { DrizzleService } from '../../drizzle/drizzle.service';
 import { EmailService } from 'src/email/email.service';
-import { users, sessions, loginHistory, blacklistedTokens, apiKeys } from '../db/schema';
-import { desc, eq, isNull, lte, or, and } from 'drizzle-orm';
+import {
+  users,
+  sessions,
+  loginHistory,
+  blacklistedTokens,
+} from '../../db/schema';
+import { desc, eq, or } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
-import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -103,20 +107,6 @@ export class AuthService {
       access_token,
       refresh_token,
     };
-  }
-
-  async introspectToken(token: string) {
-    try {
-      const payload = this.jwtService.verify(token, { secret: this.configService.get<string>('JWT_SECRET')});
-      const isBlacklisted = await this.isTokenBlacklisted(token);
-      return {
-        active: !isBlacklisted,
-        ...payload,
-      };
-    } catch (error) {
-      console.error(error);
-      return { active: false };
-    }
   }
 
   async getLocationFromIp(ip: string): Promise<string> {
@@ -252,95 +242,5 @@ export class AuthService {
       .limit(1);
 
     return !!blacklistedToken;
-  }
-
-  async enableMfa(userId: number) {
-    const [user] = await this.drizzle.db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
-    const { secret, otpAuthUrl, qrCodeDataUrl } =
-      await this.mfaService.generateSecret(user.username);
-
-    await this.drizzle.db
-      .update(users)
-      .set({ mfaSecret: secret })
-      .where(eq(users.id, userId));
-
-    return { otpAuthUrl, qrCodeDataUrl };
-  }
-
-  async verifyAndEnableMfa(userId: number, token: string) {
-    const [user] = await this.drizzle.db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
-    const isValidToken = this.mfaService.verifyToken(token, user.mfaSecret);
-    if (!isValidToken) {
-      throw new UnauthorizedException('Invalid MFA token');
-    }
-
-    await this.drizzle.db
-      .update(users)
-      .set({ mfaEnabled: true })
-      .where(eq(users.id, userId));
-
-    return { message: 'MFA enabled successfully' };
-  }
-
-  async disableMfa(userId: number) {
-    await this.drizzle.db
-      .update(users)
-      .set({ mfaEnabled: false, mfaSecret: null })
-      .where(eq(users.id, userId));
-
-    return { message: 'MFA disabled successfully' };
-  }
-
-  async createApiKey(name: string, expiresAt?: Date): Promise<string> {
-    const key = uuidv4();
-    await this.drizzle.db.insert(apiKeys).values({
-      name,
-      key,
-      expiresAt: expiresAt || null,
-    });
-    return key;
-  }
-
-  async validateApiKey(key: string): Promise<boolean> {
-    const [apiKey] = await this.drizzle.db
-      .select()
-      .from(apiKeys)
-      .where(
-        and(
-          eq(apiKeys.key, key),
-          or(
-            isNull(apiKeys.expiresAt),
-            lte(apiKeys.expiresAt, new Date())
-          )
-        )
-      )
-      .limit(1);
-
-    if (apiKey) {
-      await this.drizzle.db
-        .update(apiKeys)
-        .set({ lastUsedAt: new Date() })
-        .where(eq(apiKeys.id, apiKey.id));
-      return true;
-    }
-    return false;
-  }
-
-  async listApiKeys() {
-    return this.drizzle.db.select().from(apiKeys);
-  }
-
-  async revokeApiKey(id: number) {
-    await this.drizzle.db.delete(apiKeys).where(eq(apiKeys.id, id));
   }
 }

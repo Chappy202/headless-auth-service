@@ -1,7 +1,7 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from '../auth.service';
+import { AuthService } from '../services/auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -17,7 +17,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(req: Request, payload: any) {
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
     if (await this.authService.isTokenBlacklisted(token)) {
-      throw new UnauthorizedException('Token is no longer valid or has been blacklisted. Please log in again.');
+      throw new UnauthorizedException(
+        'Token is no longer valid or has been blacklisted. Please log in again.',
+      );
     }
     return { userId: payload.sub, username: payload.username };
   }

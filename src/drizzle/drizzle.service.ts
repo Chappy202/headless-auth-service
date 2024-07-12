@@ -33,7 +33,10 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
   private async runMigrations() {
     try {
-      await migrate(this._db, { migrationsFolder: './drizzle', migrationsTable: '__auth_migrations' });
+      await migrate(this._db, {
+        migrationsFolder: './drizzle',
+        migrationsTable: '__auth_migrations',
+      });
       console.log('Migrations completed successfully');
     } catch (error) {
       console.error('Error running migrations:', error);

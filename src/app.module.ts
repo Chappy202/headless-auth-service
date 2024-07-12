@@ -10,14 +10,14 @@ import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env', }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     DrizzleModule,
     DevtoolsModule.register({
       http: process.env.NODE_ENV !== 'production',
     }),
     AuthModule,
     UserModule,
-    AdminModule
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

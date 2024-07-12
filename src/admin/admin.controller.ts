@@ -1,4 +1,12 @@
-import { Controller, Post, Put, UseGuards, Body, Param, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Put,
+  UseGuards,
+  Body,
+  Param,
+  Get,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -30,7 +38,10 @@ export class AdminController {
   }
 
   @Put('users/:id/reset-password')
-  async resetUserPassword(@Param('id') id: number, @Body() resetPasswordDto: ResetPasswordDto) {
+  async resetUserPassword(
+    @Param('id') id: number,
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ) {
     await this.adminService.resetUserPassword(id, resetPasswordDto.newPassword);
     return { message: 'Password reset successfully' };
   }
@@ -46,12 +57,18 @@ export class AdminController {
   }
 
   @Post('users/:userId/roles/:roleId')
-  assignRoleToUser(@Param('userId') userId: number, @Param('roleId') roleId: number) {
+  assignRoleToUser(
+    @Param('userId') userId: number,
+    @Param('roleId') roleId: number,
+  ) {
     return this.adminService.assignRoleToUser(userId, roleId);
   }
 
   @Post('roles/:roleId/permissions/:permissionId')
-  assignPermissionToRole(@Param('roleId') roleId: number, @Param('permissionId') permissionId: number) {
+  assignPermissionToRole(
+    @Param('roleId') roleId: number,
+    @Param('permissionId') permissionId: number,
+  ) {
     return this.adminService.assignPermissionToRole(roleId, permissionId);
   }
 
