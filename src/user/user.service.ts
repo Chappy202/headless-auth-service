@@ -15,7 +15,9 @@ export class UserService {
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
-    return user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 
   async updateProfile(id: number, updateData: UpdateProfileDto) {
