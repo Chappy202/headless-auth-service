@@ -14,7 +14,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from '../services/auth.service';
 import { ResetPasswordDto } from 'src/admin/dtos/reset-password.dto';
 import { RegisterDto } from '../dtos/register.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -26,6 +28,7 @@ export class AuthController {
     return this.authService.login(req.user, ip, userAgent, mfaToken);
   }
 
+  @ApiBearerAuth()
   @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   async logout(@Request() req) {
@@ -48,12 +51,14 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @ApiBearerAuth()
   @Post('request-password-reset')
   @UseGuards(AuthGuard('jwt'))
   async requestPasswordReset(@Body('email') email: string) {
     return this.authService.requestPasswordReset(email);
   }
 
+  @ApiBearerAuth()
   @Post('reset-password')
   @UseGuards(AuthGuard('jwt'))
   async resetPassword(@Request() req, @Body() resetDto: ResetPasswordDto) {
@@ -61,12 +66,14 @@ export class AuthController {
     return this.authService.resetPassword(token, resetDto.newPassword);
   }
 
+  @ApiBearerAuth()
   @Get('sessions')
   @UseGuards(AuthGuard('jwt'))
   async getUserSessions(@Request() req) {
     return this.authService.getUserSessions(req.user.id);
   }
 
+  @ApiBearerAuth()
   @Delete('sessions/:id')
   @UseGuards(AuthGuard('jwt'))
   async revokeSession(@Request() req, @Param('id') sessionId: number) {
@@ -74,6 +81,7 @@ export class AuthController {
     return { message: 'Session revoked successfully' };
   }
 
+  @ApiBearerAuth()
   @Delete('sessions')
   @UseGuards(AuthGuard('jwt'))
   async revokeAllSessions(@Request() req) {

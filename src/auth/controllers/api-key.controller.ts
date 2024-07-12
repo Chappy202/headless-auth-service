@@ -9,7 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { BackendAuthService } from '../services/backend-auth.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('api-keys')
 @Controller('api-keys')
 @UseGuards(AuthGuard('jwt'))
 export class ApiKeyController {

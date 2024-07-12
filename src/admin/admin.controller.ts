@@ -12,7 +12,10 @@ import { AdminService } from './admin.service';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { PermissionGuard } from 'src/auth/guards/permission.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('admin')
+@ApiBearerAuth()
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), PermissionGuard)
 export class AdminController {

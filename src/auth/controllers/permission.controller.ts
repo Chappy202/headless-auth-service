@@ -12,7 +12,9 @@ import { PermissionService } from '../services/permission.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RequirePermission } from '../decorators/permission.decorator';
 import { PermissionGuard } from '../guards/permission.guard';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('permissions')
 @Controller('auth/permissions')
 @UseGuards(AuthGuard('jwt'), PermissionGuard)
 export class PermissionController {

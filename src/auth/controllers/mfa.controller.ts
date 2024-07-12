@@ -1,7 +1,10 @@
 import { Controller, Post, UseGuards, Request, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { MFAAuthService } from '../services/mfa-auth.service';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('mfa')
+@ApiBearerAuth()
 @Controller('auth')
 @UseGuards(AuthGuard('jwt'))
 export class MFAController {
