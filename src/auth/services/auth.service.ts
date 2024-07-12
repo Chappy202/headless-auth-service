@@ -12,7 +12,7 @@ import {
   sessions,
   loginHistory,
   blacklistedTokens,
-} from '../../db/schema';
+} from '../../drizzle/schema';
 import { desc, eq, or, and, lt } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
 import { ConfigService } from '@nestjs/config';

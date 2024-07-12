@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { DrizzleService } from '../../drizzle/drizzle.service';
-import { apiKeys } from '../../db/schema';
+import { apiKeys } from '../../drizzle/schema';
 import { eq, isNull, lte, or, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';

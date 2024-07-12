@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { DrizzleService } from '../../drizzle/drizzle.service';
-import { users } from '../../db/schema';
+import { users } from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
 

@@ -6,7 +6,7 @@ import {
   rolePermissions,
   userPermissions,
   userRoles,
-} from '../../db/schema';
+} from '../../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 @Injectable()

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '../drizzle/drizzle.service';
-import { users, sessions } from '../db/schema';
+import { users, sessions } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { UpdateProfileDto } from './dtos/profile.dto';
 import * as bcrypt from 'bcrypt';

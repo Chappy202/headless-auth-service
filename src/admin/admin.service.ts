@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '../drizzle/drizzle.service';
-import { users, loginHistory, sessions, roles, userRoles } from '../db/schema';
+import {
+  users,
+  loginHistory,
+  sessions,
+  roles,
+  userRoles,
+} from '../drizzle/schema';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 
