@@ -10,13 +10,14 @@ import { EmailService } from 'src/email/email.service';
 import {
   users,
   sessions,
-  loginHistory,
   blacklistedTokens,
+  loginHistory,
 } from '../../drizzle/schema';
 import { desc, eq, or, and, lt } from 'drizzle-orm';
 import { MfaService } from 'src/mfa/mfa.service';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/redis/redis.service';
+import { PermissionService } from './permission.service';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +28,7 @@ export class AuthService {
     private mfaService: MfaService,
     private configService: ConfigService,
     private redisService: RedisService,
+    private permissionService: PermissionService,
   ) {}
 
   async validateUser(usernameOrEmail: string, password: string): Promise<any> {
@@ -51,6 +53,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user[0];
     return result;
   }
@@ -69,10 +72,22 @@ export class AuthService {
       }
     }
 
-    const payload = { username: user.username, sub: user.id };
+    // Fetch user permissions
+    const userPermissions = await this.permissionService.getUserPermissions(
+      user.id,
+    );
+
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      permissions: userPermissions.map((p) => p.permissionName),
+    };
+
     const access_token = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: process.env.JWT_EXPIRATION || '2h',
     });
+
     const refresh_token = this.jwtService.sign(payload, {
       expiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
       secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
@@ -205,16 +220,21 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const newAccessToken = this.jwtService.sign(
-        {
-          username: payload.username,
-          sub: payload.sub,
-        },
-        {
-          secret: this.configService.get<string>('JWT_SECRET'),
-          expiresIn: process.env.JWT_EXPIRATION || '2h',
-        },
+      // Fetch updated user permissions
+      const userPermissions = await this.permissionService.getUserPermissions(
+        payload.sub,
       );
+
+      const newPayload = {
+        sub: payload.sub,
+        username: payload.username,
+        permissions: userPermissions.map((p) => p.permissionName),
+      };
+
+      const newAccessToken = this.jwtService.sign(newPayload, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: process.env.JWT_EXPIRATION || '2h',
+      });
 
       // Update session
       await this.drizzle.db
@@ -348,13 +368,13 @@ export class AuthService {
   async cleanupExpiredTokens() {
     const now = new Date();
 
+    console.log('Cleaning up expired tokens...');
+
     // Remove expired tokens from the database
     const expiredTokens = await this.drizzle.db
       .delete(blacklistedTokens)
       .where(lt(blacklistedTokens.expiresAt, now))
       .returning();
-
-    console.log(`Cleaned up ${expiredTokens.length} expired tokens`);
 
     return expiredTokens.length;
   }
