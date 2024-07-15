@@ -1,9 +1,12 @@
+// src/drizzle/drizzle.service.ts
+
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { Pool } from 'pg';
 import * as schema from './schema';
+import { seed } from './seed';
 
 @Injectable()
 export class DrizzleService implements OnModuleInit, OnModuleDestroy {
@@ -21,6 +24,9 @@ export class DrizzleService implements OnModuleInit, OnModuleDestroy {
 
     // Run migrations
     await this.runMigrations();
+
+    // Run seed
+    await seed(this, this.configService);
   }
 
   async onModuleDestroy() {

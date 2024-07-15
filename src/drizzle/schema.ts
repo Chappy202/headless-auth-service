@@ -15,6 +15,7 @@ export const permissionTypeEnum = pgEnum('permission_type', [
   'admin',
   'read',
   'write',
+  '*',
 ]);
 
 export const users = authSchema.table('users', {

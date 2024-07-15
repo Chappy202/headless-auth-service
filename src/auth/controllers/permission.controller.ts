@@ -33,7 +33,7 @@ export class PermissionController {
   }
 
   @Post('resources')
-  @RequirePermission('write:resources')
+  //@RequirePermission('write:resources')
   async createResource(@Body() data: { name: string; description?: string }) {
     return this.permissionService.createResource(data.name, data.description);
   }
@@ -50,10 +50,14 @@ export class PermissionController {
     return this.permissionService.getResourcePermissions(id);
   }
 
-  @Post('permissions')
-  @RequirePermission('write:permissions')
+  @Post()
+  //@RequirePermission('write:permissions')
   async createPermission(
-    @Body() data: { resourceId: number; type: 'admin' | 'read' | 'write' },
+    @Body()
+    data: {
+      resourceId: number;
+      type: 'admin' | 'read' | 'write' | '*';
+    },
   ) {
     return this.permissionService.createPermission(data.resourceId, data.type);
   }

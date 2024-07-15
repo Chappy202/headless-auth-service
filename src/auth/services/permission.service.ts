@@ -4,10 +4,11 @@ import {
   permissions,
   resources,
   rolePermissions,
+  roles,
   userPermissions,
   userRoles,
 } from '../../drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 @Injectable()
 export class PermissionService {
@@ -36,7 +37,10 @@ export class PermissionService {
     return resource;
   }
 
-  async createPermission(resourceId: number, type: 'admin' | 'read' | 'write') {
+  async createPermission(
+    resourceId: number,
+    type: 'admin' | 'read' | 'write' | '*',
+  ) {
     const name = `${type}:${(await this.getResourceById(resourceId)).name}`;
     const [permission] = await this.drizzle.db
       .insert(permissions)
@@ -75,7 +79,7 @@ export class PermissionService {
       })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
-      .innerJoin(resources, eq(permissions.resourceId, resources.id))
+      .leftJoin(resources, eq(permissions.resourceId, resources.id))
       .where(eq(userPermissions.userId, userId));
 
     const rolePerms = await this.drizzle.db
@@ -86,20 +90,27 @@ export class PermissionService {
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .innerJoin(resources, eq(permissions.resourceId, resources.id))
+      .leftJoin(resources, eq(permissions.resourceId, resources.id))
       .innerJoin(userRoles, eq(rolePermissions.roleId, userRoles.roleId))
       .where(eq(userRoles.userId, userId));
 
-    return [...userPerms, ...rolePerms];
+    const allPerms = [...userPerms, ...rolePerms];
+
+    // Handle null resource names (like for '*:*' permission)
+    return allPerms.map((perm) => ({
+      ...perm,
+      resourceName: perm.resourceName || '*',
+      permissionName: perm.permissionName || `${perm.permissionType}:*`,
+    }));
   }
 
   async checkPermission(userId: number, requiredPermission: string) {
-    const userPermissions = await this.getUserPermissions(userId);
-
-    // Check for superuser permission
-    if (userPermissions.some((p) => p.permissionName === '*:*')) {
+    // First, check if the user has the super role
+    if (await this.userHasSuperRole(userId)) {
       return true;
     }
+
+    const userPermissions = await this.getUserPermissions(userId);
 
     const [requiredType, requiredResource] = requiredPermission.split(':');
 
@@ -134,5 +145,28 @@ export class PermissionService {
 
       return false;
     });
+  }
+
+  async userHasSuperRole(userId: number): Promise<boolean> {
+    const superRole = await this.drizzle.db
+      .select()
+      .from(roles)
+      .where(eq(roles.name, 'super'))
+      .limit(1);
+
+    if (!superRole.length) return false;
+
+    const userSuperRole = await this.drizzle.db
+      .select()
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.roleId, superRole[0].id),
+        ),
+      )
+      .limit(1);
+
+    return userSuperRole.length > 0;
   }
 }

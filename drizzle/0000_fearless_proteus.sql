@@ -1,7 +1,7 @@
 CREATE SCHEMA "auth";
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."permission_type" AS ENUM('admin', 'read', 'write');
+ CREATE TYPE "public"."permission_type" AS ENUM('admin', 'read', 'write', '*');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

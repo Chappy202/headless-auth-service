@@ -15,6 +15,7 @@ import { BackendAuthService } from './services/backend-auth.service';
 import { BackendAuthController } from './controllers/backend-auth.controller';
 import { MFAController } from './controllers/mfa.controller';
 import { PermissionService } from './services/permission.service';
+import { PermissionController } from './controllers/permission.controller';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { PermissionService } from './services/permission.service';
     ApiKeyController,
     BackendAuthController,
     MFAController,
+    PermissionController,
   ],
   exports: [AuthService],
 })
