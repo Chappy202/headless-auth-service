@@ -1,6 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
-import { DrizzleService } from 'src/infrastructure/database/drizzle.service';
+import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import {
   permissions,
   resources,
@@ -8,7 +6,9 @@ import {
   userPermissions,
   userRoles,
   roles,
-} from 'src/infrastructure/database/schema';
+} from '@/infrastructure/database/schema';
+import { Injectable } from '@nestjs/common';
+import { and, eq } from 'drizzle-orm';
 
 @Injectable()
 export class PermissionService {

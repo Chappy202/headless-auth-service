@@ -1,3 +1,4 @@
+import { PermissionGuard } from '@/modules/auth/guards/permission.guard';
 import {
   Controller,
   Post,
@@ -8,11 +9,10 @@ import {
   Get,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { AdminService } from '../services/admin.service';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { PermissionGuard } from 'src/modules/auth/guards/permission.guard';
+import { AdminService } from '../services/admin.service';
 
 @ApiTags('admin')
 @ApiBearerAuth()

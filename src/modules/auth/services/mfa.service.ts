@@ -1,9 +1,9 @@
+import { DrizzleService } from '@/infrastructure/database/drizzle.service';
+import { users } from '@/infrastructure/database/schema';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { authenticator } from 'otplib';
 import * as qrcode from 'qrcode';
-import { DrizzleService } from 'src/infrastructure/database/drizzle.service';
-import { users } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class MfaService {

@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DrizzleService } from '../../../infrastructure/database/drizzle.service';
+import { and, asc, eq, gt } from 'drizzle-orm';
+import * as bcrypt from 'bcrypt';
+import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import {
   users,
   loginHistory,
-  sessions,
-  roles,
   userRoles,
-} from '../../../infrastructure/database/schema';
-import { and, asc, eq, gt } from 'drizzle-orm';
-import * as bcrypt from 'bcrypt';
+  roles,
+  sessions,
+} from '@/infrastructure/database/schema';
 
 @Injectable()
 export class AdminService {

@@ -1,23 +1,23 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
-import { EmailService } from 'src/modules/email/services/email.service';
-import { desc, eq, or, and, lt } from 'drizzle-orm';
-import { ConfigService } from '@nestjs/config';
-import { RedisService } from 'src/infrastructure/cache/redis.service';
-import { PermissionService } from './permission.service';
-import { DrizzleService } from 'src/infrastructure/database/drizzle.service';
+import { RedisService } from '@/infrastructure/cache/redis.service';
+import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import {
   users,
   sessions,
   loginHistory,
   blacklistedTokens,
-} from 'src/infrastructure/database/schema';
+} from '@/infrastructure/database/schema';
+import { EmailService } from '@/modules/email/services/email.service';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { or, eq, desc, and, lt } from 'drizzle-orm';
 import { MfaService } from './mfa.service';
+import { PermissionService } from './permission.service';
 
 @Injectable()
 export class AuthService {

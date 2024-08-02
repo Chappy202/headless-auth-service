@@ -1,3 +1,4 @@
+import { ResetPasswordDto } from '@/modules/admin/dto/reset-password.dto';
 import {
   Controller,
   Post,
@@ -11,8 +12,7 @@ import {
   Param,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ResetPasswordDto } from 'src/modules/admin/dto/reset-password.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { RegisterDto } from '../dto/register.dto';
 import { AuthService } from '../services/auth.service';
 

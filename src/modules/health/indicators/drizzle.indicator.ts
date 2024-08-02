@@ -1,11 +1,11 @@
+import { DrizzleService } from '@/infrastructure/database/drizzle.service';
+import { users } from '@/infrastructure/database/schema';
 import { Injectable } from '@nestjs/common';
 import {
   HealthCheckError,
   HealthIndicator,
   HealthIndicatorResult,
 } from '@nestjs/terminus';
-import { DrizzleService } from 'src/infrastructure/database/drizzle.service';
-import { users } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class DrizzleHealthIndicator extends HealthIndicator {

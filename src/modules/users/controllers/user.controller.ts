@@ -1,7 +1,7 @@
 import { Controller, Get, Put, UseGuards, Request, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { UpdateProfileDto } from '../dto/profile.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
 
 @ApiTags('users')

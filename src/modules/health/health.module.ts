@@ -1,11 +1,11 @@
+import { RedisModule } from '@/infrastructure/cache/redis.module';
+import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './controllers/health.controller';
-import { HttpModule } from '@nestjs/axios';
 import { DrizzleHealthIndicator } from './indicators/drizzle.indicator';
 import { RedisHealthIndicator } from './indicators/redis.indicator';
-import { RedisModule } from 'src/infrastructure/cache/redis.module';
-import { DrizzleModule } from 'src/infrastructure/database/drizzle.module';
 
 @Module({
   imports: [TerminusModule, HttpModule, DrizzleModule, RedisModule],

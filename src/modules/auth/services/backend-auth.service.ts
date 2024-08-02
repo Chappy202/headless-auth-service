@@ -3,10 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 import { eq, isNull, lte, or, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
+import { DrizzleService } from '@/infrastructure/database/drizzle.service';
+import { apiKeys } from '@/infrastructure/database/schema';
 import { AuthService } from './auth.service';
-import { DrizzleService } from 'src/infrastructure/database/drizzle.service';
-import { apiKeys } from 'src/infrastructure/database/schema';
-
 @Injectable()
 export class BackendAuthService {
   constructor(

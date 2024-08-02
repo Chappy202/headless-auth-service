@@ -9,8 +9,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { RequirePermission } from '../decorators/permission.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { RequirePermission } from '../decorators/permission.decorator';
 import { PermissionGuard } from '../guards/permission.guard';
 import { PermissionService } from '../services/permission.service';
 

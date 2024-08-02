@@ -2,8 +2,8 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import Strategy from 'passport-headerapikey';
+import { ApiKeyUser } from '@/modules/api-keys/types/api-key';
 import { BackendAuthService } from '../services/backend-auth.service';
-import { ApiKeyUser } from 'src/modules/api-keys/types/api-key';
 
 @Injectable()
 export class ApiKeyStrategy extends PassportStrategy(Strategy, 'api-key') {

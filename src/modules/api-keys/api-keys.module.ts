@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { DrizzleModule } from '../../infrastructure/database/drizzle.module';
 import { ApiKeyController } from './controllers/api-key.controller';
 import { ApiKeyService } from './services/api-key.service';
+import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
 
 @Module({
   imports: [DrizzleModule],

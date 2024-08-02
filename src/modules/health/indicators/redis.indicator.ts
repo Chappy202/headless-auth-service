@@ -1,10 +1,10 @@
+import { RedisService } from '@/infrastructure/cache/redis.service';
 import { Injectable } from '@nestjs/common';
 import {
   HealthCheckError,
   HealthIndicator,
   HealthIndicatorResult,
 } from '@nestjs/terminus';
-import { RedisService } from 'src/infrastructure/cache/redis.service';
 
 @Injectable()
 export class RedisHealthIndicator extends HealthIndicator {
