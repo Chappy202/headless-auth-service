@@ -2,15 +2,15 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-import { DrizzleModule } from './drizzle/drizzle.module';
+import { DrizzleModule } from './infrastructure/database/drizzle.module';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
-import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { AdminModule } from './admin/admin.module';
+import { UserModule } from './modules/users/user.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { RedisModule } from './redis/redis.module';
-import { SchedulesModule } from './schedules/schedules.module';
-import { HealthModule } from './health/health.module';
+import { RedisModule } from './infrastructure/cache/redis.module';
+import { HealthModule } from './modules/health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 
 @Module({
   imports: [
@@ -23,9 +23,9 @@ import { HealthModule } from './health/health.module';
     UserModule,
     AdminModule,
     ScheduleModule.forRoot(),
-    SchedulesModule,
     RedisModule,
     HealthModule,
+    ApiKeysModule,
   ],
   controllers: [AppController],
   providers: [AppService],
