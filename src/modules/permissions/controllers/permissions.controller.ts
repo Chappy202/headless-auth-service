@@ -4,12 +4,17 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiHeader,
+  ApiConsumes,
+  ApiProduces,
 } from '@nestjs/swagger';
 import { PermissionGuard } from '@/common/guards/permission.guard';
 import { RequirePermission } from '@/common/decorators/permission.decorator';
 import { PermissionsService } from '../services/permissions.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
+import { PermissionResponseDto } from '../dto/permission-response.dto';
+import { ErrorResponseDto } from '@/common/dto/error-response.dto';
 
 @ApiTags('permissions')
 @Controller('permissions')
@@ -24,25 +29,76 @@ export class PermissionsController {
   @ApiResponse({
     status: 201,
     description: 'The permission has been successfully created.',
+    type: PermissionResponseDto,
   })
-  create(@Body() createPermissionDto: CreatePermissionDto) {
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  @ApiConsumes('application/json')
+  @ApiProduces('application/json')
+  async create(
+    @Body() createPermissionDto: CreatePermissionDto,
+  ): Promise<PermissionResponseDto> {
     return this.permissionsService.createPermission(createPermissionDto);
   }
 
   @Get()
   @RequirePermission('read:permissions')
   @ApiOperation({ summary: 'Get all permissions' })
-  @ApiResponse({ status: 200, description: 'Return all permissions.' })
-  findAll() {
+  @ApiResponse({
+    status: 200,
+    description: 'Return all permissions.',
+    type: [PermissionResponseDto],
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  @ApiProduces('application/json')
+  async findAll(): Promise<PermissionResponseDto[]> {
     return this.permissionsService.getPermissions();
   }
 
   @Get(':id')
   @RequirePermission('read:permissions')
   @ApiOperation({ summary: 'Get a permission by id' })
-  @ApiResponse({ status: 200, description: 'Return the permission.' })
-  @ApiResponse({ status: 404, description: 'Permission not found.' })
-  findOne(@Param('id') id: string) {
+  @ApiResponse({
+    status: 200,
+    description: 'Return the permission.',
+    type: PermissionResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Permission not found.',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  @ApiProduces('application/json')
+  async findOne(@Param('id') id: string): Promise<PermissionResponseDto> {
     return this.permissionsService.getPermissionById(+id);
   }
 
@@ -53,11 +109,27 @@ export class PermissionsController {
     status: 200,
     description: 'The permission has been assigned to the role.',
   })
-  assignToRole(
+  @ApiResponse({
+    status: 404,
+    description: 'Permission or role not found.',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  @ApiConsumes('application/json')
+  @ApiProduces('application/json')
+  async assignToRole(
     @Param('permissionId') permissionId: string,
     @Param('roleId') roleId: string,
-  ) {
-    return this.permissionsService.assignPermissionToRole(
+  ): Promise<void> {
+    await this.permissionsService.assignPermissionToRole(
       +permissionId,
       +roleId,
     );
@@ -70,11 +142,27 @@ export class PermissionsController {
     status: 200,
     description: 'The permission has been assigned to the user.',
   })
-  assignToUser(
+  @ApiResponse({
+    status: 404,
+    description: 'Permission or user not found.',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  @ApiConsumes('application/json')
+  @ApiProduces('application/json')
+  async assignToUser(
     @Param('permissionId') permissionId: string,
     @Param('userId') userId: string,
-  ) {
-    return this.permissionsService.assignPermissionToUser(
+  ): Promise<void> {
+    await this.permissionsService.assignPermissionToUser(
       +permissionId,
       +userId,
     );

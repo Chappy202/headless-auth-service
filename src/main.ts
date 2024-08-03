@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+// import { CustomThrottlerGuard } from './common/guards/throttler.guard';
+// import { ThrottlerGuard } from '@nestjs/throttler';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -11,16 +13,20 @@ async function bootstrap() {
 
   app.use(helmet());
 
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
+
   const allowedOrigins = [
-    'http://localhost:3000', // Local development
-    'https://your-nextjs-app.com', // Production NextJS frontend
-    'capacitor://localhost', // For Ionic/Cordova/Capacitor
+    'http://localhost:3000',
+    'https://your-nextjs-app.com',
+    'capacitor://localhost',
     'tauri://localhost:3000',
   ];
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile and desktop apps)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -35,13 +41,20 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Headless Auth API')
-    .setVersion('0.1')
+    .setDescription('The Headless Auth API description')
+    .setVersion('1.0')
     .addTag('auth')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
   app.useGlobalPipes(new ValidationPipe());
+
+  // TODO: Uncomment this to enable the throttler guard
+  // const throttlerGuard = app.get(ThrottlerGuard);
+  // app.useGlobalGuards(new CustomThrottlerGuard(throttlerGuard));
+
   await app.listen(3000);
 }
 bootstrap();

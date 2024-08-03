@@ -4,10 +4,12 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
+import { UserProfileDto } from '../dto/user-profile.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -18,12 +20,22 @@ export class UserController {
 
   @Get('profile')
   @ApiOperation({ summary: 'Get user profile' })
-  @ApiResponse({ status: 200, description: 'Returns the user profile.' })
-  async getProfile(@Request() req) {
-    const user = await this.userService.findById(req.user.userId);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the user profile.',
+    type: UserProfileDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async getProfile(@Request() req): Promise<UserProfileDto> {
+    return this.userService.getUserProfile(req.user.userId);
   }
 
   @Put('profile')
@@ -31,8 +43,21 @@ export class UserController {
   @ApiResponse({
     status: 200,
     description: 'Returns the updated user profile.',
+    type: UserProfileDto,
   })
-  updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async updateProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ): Promise<UserProfileDto> {
     return this.userService.updateProfile(req.user.userId, updateProfileDto);
   }
 }

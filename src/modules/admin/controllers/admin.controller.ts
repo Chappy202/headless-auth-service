@@ -7,19 +7,29 @@ import {
   Body,
   Param,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiQuery,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { PermissionGuard } from '@/common/guards/permission.guard';
 import { RequirePermission } from '@/common/decorators/permission.decorator';
 import { AdminService } from '../services/admin.service';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { UserResponseDto } from '../dto/user-response.dto';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { PaginationDto } from '@/common/dto/pagination.dto';
+import { ErrorResponseDto } from '@/common/dto/error-response.dto';
+import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission.dto';
+import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
+import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
+import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -34,24 +44,94 @@ export class AdminController {
   @ApiResponse({
     status: 201,
     description: 'The user has been successfully created.',
+    type: UserResponseDto,
   })
-  createUser(@Body() createUserDto: CreateUserDto) {
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async createUser(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<UserResponseDto> {
     return this.adminService.createUser(createUserDto);
   }
 
   @Get('users')
   @RequirePermission('read:users')
   @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Return all users.' })
-  getUsers() {
-    return this.adminService.getUsers();
+  @ApiResponse({
+    status: 200,
+    description: 'Return all users.',
+    type: [UserResponseDto],
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    description: 'Sort field',
+    example: 'username',
+  })
+  @ApiQuery({ name: 'order', required: false, enum: ['ASC', 'DESC'] })
+  @ApiQuery({ name: 'search', required: false, description: 'Search term' })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  @ApiHeader({
+    name: 'X-Total-Count',
+    description: 'Total number of records',
+    required: false,
+    schema: { type: 'number' },
+  })
+  async getUsers(
+    @Query() paginationDto: PaginationDto,
+    // @Query('sort') sort?: string,
+    // @Query('order') order?: 'ASC' | 'DESC',
+    // @Query('search') search?: string,
+  ): Promise<UserResponseDto[]> {
+    // TODO: Implement sorting and searching
+    return this.adminService.getUsers(paginationDto /*, sort, order, search*/);
   }
 
   @Get('users/:id')
   @RequirePermission('read:users')
   @ApiOperation({ summary: 'Get a user by id' })
-  @ApiResponse({ status: 200, description: 'Return the user.' })
-  getUserById(@Param('id') id: string) {
+  @ApiResponse({
+    status: 200,
+    description: 'Return the user.',
+    type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async getUserById(@Param('id') id: string): Promise<UserResponseDto> {
     return this.adminService.getUserById(+id);
   }
 
@@ -61,8 +141,26 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'The user has been successfully updated.',
+    type: UserResponseDto,
   })
-  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async updateUser(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     return this.adminService.updateUser(+id, updateUserDto);
   }
 
@@ -72,8 +170,23 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'The user has been successfully deleted.',
+    type: UserResponseDto,
   })
-  deleteUser(@Param('id') id: string) {
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async deleteUser(@Param('id') id: string): Promise<UserResponseDto> {
     return this.adminService.deleteUser(+id);
   }
 
@@ -84,18 +197,52 @@ export class AdminController {
     status: 200,
     description: 'The permission has been assigned to the user.',
   })
-  assignPermissionToUser(
+  @ApiResponse({
+    status: 404,
+    description: 'User or permission not found',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async assignPermissionToUser(
     @Param('userId') userId: string,
     @Param('permissionId') permissionId: string,
-  ) {
+  ): Promise<void> {
     return this.adminService.assignPermissionToUser(+userId, +permissionId);
   }
 
   @Get('users/:userId/permissions')
   @RequirePermission('read:permissions')
   @ApiOperation({ summary: 'Get user permissions' })
-  @ApiResponse({ status: 200, description: 'Return the user permissions.' })
-  getUserPermissions(@Param('userId') userId: string) {
+  @ApiResponse({
+    status: 200,
+    description: 'Return the user permissions.',
+    type: [PermissionResponseDto],
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async getUserPermissions(
+    @Param('userId') userId: string,
+  ): Promise<PermissionResponseDto[]> {
     return this.adminService.getUserPermissions(+userId);
   }
 
@@ -105,21 +252,95 @@ export class AdminController {
   @ApiResponse({
     status: 201,
     description: 'The resource has been successfully created.',
+    type: ResourceResponseDto,
   })
-  createResource(
-    @Body() createResourceDto: { name: string; description?: string },
-  ) {
-    return this.adminService.createResource(
-      createResourceDto.name,
-      createResourceDto.description,
-    );
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async createResource(
+    @Body() createResourceDto: CreateResourceDto,
+  ): Promise<ResourceResponseDto> {
+    return this.adminService.createResource(createResourceDto);
   }
 
   @Get('resources')
   @RequirePermission('read:resources')
   @ApiOperation({ summary: 'Get all resources' })
-  @ApiResponse({ status: 200, description: 'Return all resources.' })
-  getResources() {
+  @ApiResponse({
+    status: 200,
+    description: 'Return all resources.',
+    type: [ResourceResponseDto],
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async getResources(): Promise<ResourceResponseDto[]> {
     return this.adminService.getResources();
+  }
+
+  @Post('permissions')
+  @RequirePermission('write:permissions')
+  @ApiOperation({ summary: 'Create a new permission' })
+  @ApiResponse({
+    status: 201,
+    description: 'The permission has been successfully created.',
+    type: PermissionResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async createPermission(
+    @Body() createPermissionDto: CreatePermissionDto,
+  ): Promise<PermissionResponseDto> {
+    return this.adminService.createPermission(createPermissionDto);
+  }
+
+  @Get('permissions')
+  @RequirePermission('read:permissions')
+  @ApiOperation({ summary: 'Get all permissions' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all permissions.',
+    type: [PermissionResponseDto],
+  })
+  @ApiHeader({
+    name: 'Authorization',
+    description: 'JWT token',
+    required: true,
+    schema: {
+      type: 'string',
+      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    },
+  })
+  async getPermissions(): Promise<PermissionResponseDto[]> {
+    return this.adminService.getPermissions();
   }
 }

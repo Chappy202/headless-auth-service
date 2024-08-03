@@ -1,18 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
-export class CreateResourceDto {
+export class ResourceResponseDto {
+  @ApiProperty({
+    example: 1,
+    description: 'The unique identifier of the resource',
+  })
+  id: number;
+
   @ApiProperty({ example: 'users', description: 'The name of the resource' })
-  @IsString()
-  @IsNotEmpty()
   name: string;
 
   @ApiProperty({
     example: 'User management resource',
     description: 'The description of the resource',
-    required: false,
   })
-  @IsString()
-  @IsOptional()
-  description?: string;
+  description: string | null;
 }

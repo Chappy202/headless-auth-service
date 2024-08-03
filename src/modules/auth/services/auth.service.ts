@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '@/modules/users/services/user.service';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { comparePassword, hashPassword } from '@/common/utils/crypto.util';
+import { LoginDto } from '../dto/login.dto';
+import { LoginResponseDto } from '../dto/login-response.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { blacklistedTokens } from '@/infrastructure/database/schema';
 import { eq, lt } from 'drizzle-orm';
@@ -27,28 +29,35 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
+  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+    const user = await this.validateUser(loginDto.username, loginDto.password);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     const payload = { username: user.username, sub: user.id };
     return {
       access_token: this.jwtService.sign(payload),
     };
   }
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto): Promise<LoginResponseDto> {
     const hashedPassword = await hashPassword(registerDto.password);
     const user = await this.userService.create({
       ...registerDto,
       password: hashedPassword,
     });
 
-    return this.login(user);
+    const payload = { username: user.username, sub: user.id };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 
-  async logout(token: string) {
+  async logout(token: string): Promise<void> {
     await this.blacklistToken(token);
   }
 
-  private async blacklistToken(token: string) {
+  private async blacklistToken(token: string): Promise<void> {
     const decoded = this.jwtService.decode(token) as { exp: number };
     const expiresAt = new Date(decoded.exp * 1000);
 
@@ -68,7 +77,7 @@ export class AuthService {
     return !!blacklistedToken;
   }
 
-  async cleanupExpiredTokens() {
+  async cleanupExpiredTokens(): Promise<void> {
     const now = new Date();
     await this.drizzle.db
       .delete(blacklistedTokens)

@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import { RedisModule } from './infrastructure/cache/redis.module';
 import { DrizzleModule } from './infrastructure/database/drizzle.module';
 import { CommonModule } from './common/common.module';
@@ -17,6 +18,18 @@ import { EmailModule } from './modules/email/email.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): ThrottlerModuleOptions => ({
+        throttlers: [
+          {
+            ttl: config.get('THROTTLE_TTL'),
+            limit: config.get('THROTTLE_LIMIT'),
+          },
+        ],
+      }),
+    }),
     DrizzleModule,
     RedisModule,
     CommonModule,

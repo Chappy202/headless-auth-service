@@ -18,7 +18,10 @@ export class DrizzleHealthIndicator extends HealthIndicator {
       await this.drizzleService.db.execute(sql`SELECT 1`);
       return this.getStatus(key, true);
     } catch (error) {
-      throw new HealthCheckError('Drizzle check failed', error);
+      throw new HealthCheckError(
+        'Drizzle check failed',
+        this.getStatus(key, false, { message: error.message }),
+      );
     }
   }
 }

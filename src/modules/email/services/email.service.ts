@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { SendEmailDto } from '../dto/send-email.dto';
+import { EmailResponseDto } from '../dto/email-response.dto';
 
 @Injectable()
 export class EmailService {
@@ -18,25 +20,52 @@ export class EmailService {
     });
   }
 
-  async sendVerificationEmail(to: string, token: string) {
-    const verificationLink = `${this.configService.get<string>('EMAIL_VERIFICATION_URL')}?token=${token}`;
+  async sendEmail(sendEmailDto: SendEmailDto): Promise<EmailResponseDto> {
+    try {
+      await this.transporter.sendMail({
+        from: this.configService.get<string>('EMAIL_FROM'),
+        to: sendEmailDto.to,
+        subject: sendEmailDto.subject,
+        html: sendEmailDto.content,
+      });
 
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('EMAIL_FROM'),
+      return {
+        success: true,
+        message: 'Email sent successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to send email: ${error.message}`,
+      };
+    }
+  }
+
+  async sendVerificationEmail(
+    to: string,
+    token: string,
+  ): Promise<EmailResponseDto> {
+    const verificationLink = `${this.configService.get<string>('EMAIL_VERIFICATION_URL')}?token=${token}`;
+    const content = `Please click <a href="${verificationLink}">here</a> to verify your email address.`;
+
+    return this.sendEmail({
       to,
       subject: 'Verify Your Email',
-      html: `Please click <a href="${verificationLink}">here</a> to verify your email address.`,
+      content,
     });
   }
 
-  async sendPasswordResetEmail(to: string, token: string) {
+  async sendPasswordResetEmail(
+    to: string,
+    token: string,
+  ): Promise<EmailResponseDto> {
     const resetLink = `${this.configService.get<string>('PASSWORD_RESET_URL')}?token=${token}`;
+    const content = `Please click <a href="${resetLink}">here</a> to reset your password.`;
 
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('EMAIL_FROM'),
+    return this.sendEmail({
       to,
       subject: 'Reset Your Password',
-      html: `Please click <a href="${resetLink}">here</a> to reset your password.`,
+      content,
     });
   }
 }

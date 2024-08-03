@@ -9,28 +9,28 @@ import {
 } from '@/infrastructure/database/schema';
 import { and, eq } from 'drizzle-orm';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
+import { PermissionResponseDto } from '../dto/permission-response.dto';
 
 @Injectable()
 export class PermissionsService {
   constructor(private drizzle: DrizzleService) {}
 
-  async createPermission(createPermissionDto: CreatePermissionDto) {
+  async createPermission(
+    createPermissionDto: CreatePermissionDto,
+  ): Promise<PermissionResponseDto> {
     const [permission] = await this.drizzle.db
       .insert(permissions)
-      .values({
-        name: createPermissionDto.name,
-        type: createPermissionDto.type,
-        resourceId: createPermissionDto.resourceId,
-      })
+      .values(createPermissionDto)
       .returning();
-    return permission;
+    return this.mapToPermissionResponseDto(permission);
   }
 
-  async getPermissions() {
-    return this.drizzle.db.select().from(permissions);
+  async getPermissions(): Promise<PermissionResponseDto[]> {
+    const permissionList = await this.drizzle.db.select().from(permissions);
+    return permissionList.map(this.mapToPermissionResponseDto);
   }
 
-  async getPermissionById(id: number) {
+  async getPermissionById(id: number): Promise<PermissionResponseDto> {
     const [permission] = await this.drizzle.db
       .select()
       .from(permissions)
@@ -41,45 +41,49 @@ export class PermissionsService {
       throw new NotFoundException('Permission not found');
     }
 
-    return permission;
+    return this.mapToPermissionResponseDto(permission);
   }
 
-  async assignPermissionToRole(permissionId: number, roleId: number) {
+  async assignPermissionToRole(
+    permissionId: number,
+    roleId: number,
+  ): Promise<void> {
     await this.drizzle.db
       .insert(rolePermissions)
       .values({ permissionId, roleId });
   }
 
-  async assignPermissionToUser(permissionId: number, userId: number) {
+  async assignPermissionToUser(
+    permissionId: number,
+    userId: number,
+  ): Promise<void> {
     await this.drizzle.db
       .insert(userPermissions)
       .values({ permissionId, userId });
   }
 
-  async getUserPermissions(userId: number) {
+  async getUserPermissions(userId: number): Promise<PermissionResponseDto[]> {
     const userPerms = await this.drizzle.db
-      .select({
-        permissionName: permissions.name,
-        permissionType: permissions.type,
-      })
+      .select()
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
       .where(eq(userPermissions.userId, userId));
 
     const rolePerms = await this.drizzle.db
-      .select({
-        permissionName: permissions.name,
-        permissionType: permissions.type,
-      })
+      .select()
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
       .innerJoin(userRoles, eq(rolePermissions.roleId, userRoles.roleId))
       .where(eq(userRoles.userId, userId));
 
-    return [...userPerms, ...rolePerms];
+    const allPerms = [...userPerms, ...rolePerms].map((p) => p.permissions);
+    return allPerms.map(this.mapToPermissionResponseDto);
   }
 
-  async checkPermission(userId: number, requiredPermission: string) {
+  async checkPermission(
+    userId: number,
+    requiredPermission: string,
+  ): Promise<boolean> {
     if (await this.userHasSuperRole(userId)) {
       return true;
     }
@@ -88,13 +92,13 @@ export class PermissionsService {
     const [requiredType, requiredResource] = requiredPermission.split(':');
 
     return userPermissions.some((p) => {
-      if (p.permissionName === requiredPermission) {
+      if (p.name === requiredPermission) {
         return true;
       }
-      if (p.permissionName === `*:${requiredResource}`) {
+      if (p.name === `*:${requiredResource}`) {
         return true;
       }
-      const [permType, permResource] = p.permissionName.split(':');
+      const [permType, permResource] = p.name.split(':');
       if (permResource === requiredResource) {
         if (
           requiredType === 'read' &&
@@ -131,5 +135,16 @@ export class PermissionsService {
       .limit(1);
 
     return userSuperRole.length > 0;
+  }
+
+  private mapToPermissionResponseDto(
+    permission: typeof permissions.$inferSelect,
+  ): PermissionResponseDto {
+    return {
+      id: permission.id,
+      name: permission.name,
+      type: permission.type,
+      resourceId: permission.resourceId,
+    };
   }
 }

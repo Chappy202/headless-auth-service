@@ -6,20 +6,30 @@ import {
   MaxLength,
   IsNotEmpty,
   Matches,
+  IsBoolean,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateUserDto {
-  @ApiProperty()
+  @ApiProperty({ example: 'johndoe', description: 'The username of the user' })
   @IsString()
   @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(20)
   username: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: 'john@example.com',
+    description: 'The email of the user',
+  })
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Password123!',
+    description: 'The password of the user',
+  })
   @IsString()
   @MinLength(8)
   @MaxLength(72) // bcrypt max length
@@ -27,4 +37,22 @@ export class CreateUserDto {
     message: 'Password is too weak',
   })
   password: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether the email is verified',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isEmailVerified?: boolean;
+
+  @ApiProperty({
+    example: false,
+    description: 'Whether MFA is enabled for the user',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  mfaEnabled?: boolean;
 }

@@ -4,12 +4,15 @@ import { apiKeys } from '@/infrastructure/database/schema';
 import { eq, isNull, lte, or, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateApiKeyDto } from '../dto/create-api-key.dto';
+import { ApiKeyResponseDto } from '../dto/api-key-response.dto';
 
 @Injectable()
 export class ApiKeyService {
   constructor(private drizzle: DrizzleService) {}
 
-  async createApiKey(createApiKeyDto: CreateApiKeyDto) {
+  async createApiKey(
+    createApiKeyDto: CreateApiKeyDto,
+  ): Promise<ApiKeyResponseDto> {
     const key = uuidv4();
     const [newApiKey] = await this.drizzle.db
       .insert(apiKeys)
@@ -21,7 +24,7 @@ export class ApiKeyService {
           : null,
       })
       .returning();
-    return { ...newApiKey, key }; // Include the key in the response
+    return this.mapToApiKeyResponseDto(newApiKey);
   }
 
   async validateApiKey(key: string): Promise<boolean> {
@@ -46,11 +49,12 @@ export class ApiKeyService {
     return false;
   }
 
-  async listApiKeys() {
-    return this.drizzle.db.select().from(apiKeys);
+  async listApiKeys(): Promise<ApiKeyResponseDto[]> {
+    const apiKeyList = await this.drizzle.db.select().from(apiKeys);
+    return apiKeyList.map(this.mapToApiKeyResponseDto);
   }
 
-  async revokeApiKey(id: number) {
+  async revokeApiKey(id: number): Promise<ApiKeyResponseDto> {
     const [revokedKey] = await this.drizzle.db
       .delete(apiKeys)
       .where(eq(apiKeys.id, id))
@@ -60,6 +64,19 @@ export class ApiKeyService {
       throw new NotFoundException('API key not found');
     }
 
-    return { message: 'API key revoked successfully' };
+    return this.mapToApiKeyResponseDto(revokedKey);
+  }
+
+  private mapToApiKeyResponseDto(
+    apiKey: typeof apiKeys.$inferSelect,
+  ): ApiKeyResponseDto {
+    return {
+      id: apiKey.id,
+      name: apiKey.name,
+      key: apiKey.key,
+      expiresAt: apiKey.expiresAt,
+      createdAt: apiKey.createdAt,
+      lastUsedAt: apiKey.lastUsedAt,
+    };
   }
 }

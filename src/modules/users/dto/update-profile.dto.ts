@@ -9,17 +9,31 @@ import {
 } from 'class-validator';
 
 export class UpdateProfileDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    example: 'johndoe',
+    description: 'The new username',
+  })
   @IsString()
   @IsOptional()
+  @MinLength(3)
+  @MaxLength(20)
   username?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    example: 'john@example.com',
+    description: 'The new email',
+  })
   @IsEmail()
   @IsOptional()
   email?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    required: false,
+    example: 'NewPassword123!',
+    description: 'The new password',
+  })
   @IsString()
   @IsOptional()
   @MinLength(8)
