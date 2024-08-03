@@ -1,16 +1,30 @@
-import { IsNotEmpty, IsString, IsEmail, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  MaxLength,
+  IsNotEmpty,
+  Matches,
+} from 'class-validator';
 
 export class CreateUserDto {
-  @IsNotEmpty()
+  @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   username: string;
 
-  @IsNotEmpty()
+  @ApiProperty()
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
-  @IsNotEmpty()
+  @ApiProperty()
   @IsString()
   @MinLength(8)
+  @MaxLength(72) // bcrypt max length
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message: 'Password is too weak',
+  })
   password: string;
 }

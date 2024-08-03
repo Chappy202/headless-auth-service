@@ -1,28 +1,38 @@
 import { Controller, Get, Put, UseGuards, Request, Body } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { UpdateProfileDto } from '../dto/profile.dto';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { UserService } from '../services/user.service';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 @ApiTags('users')
-@ApiBearerAuth()
 @Controller('users')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private readonly userService: UserService) {}
 
   @Get('profile')
-  getProfile(@Request() req) {
-    return this.userService.findOne(req.user.userId);
+  @ApiOperation({ summary: 'Get user profile' })
+  @ApiResponse({ status: 200, description: 'Returns the user profile.' })
+  async getProfile(@Request() req) {
+    const user = await this.userService.findById(req.user.userId);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 
   @Put('profile')
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the updated user profile.',
+  })
   updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
     return this.userService.updateProfile(req.user.userId, updateProfileDto);
-  }
-
-  @Get('sessions')
-  getSessions(@Request() req) {
-    return this.userService.getSessions(req.user.userId);
   }
 }

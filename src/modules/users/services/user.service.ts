@@ -1,56 +1,66 @@
-import { Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-import * as bcrypt from 'bcrypt';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
-import { users, sessions } from '@/infrastructure/database/schema';
-import { UpdateProfileDto } from '../dto/profile.dto';
+import { users } from '@/infrastructure/database/schema';
+import { eq } from 'drizzle-orm';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
 
 @Injectable()
 export class UserService {
   constructor(private drizzle: DrizzleService) {}
 
-  async findOne(id: number) {
+  async findByUsername(username: string) {
+    const [user] = await this.drizzle.db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async findById(id: number) {
     const [user] = await this.drizzle.db
       .select()
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateProfile(id: number, updateProfileDto: UpdateProfileDto) {
+    const [updatedUser] = await this.drizzle.db
+      .update(users)
+      .set(updateProfileDto)
+      .where(eq(users.id, id))
+      .returning();
+
+    if (!updatedUser) {
+      throw new NotFoundException('User not found');
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userWithoutPassword } = user;
+    const { password, ...userWithoutPassword } = updatedUser;
     return userWithoutPassword;
   }
 
-  async updateProfile(id: number, updateData: UpdateProfileDto) {
-    const updateValues: Partial<typeof users.$inferInsert> = {};
+  // This method is used by the AuthService for user creation
+  async create(
+    userData: Omit<typeof users.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>,
+  ) {
+    const [newUser] = await this.drizzle.db
+      .insert(users)
+      .values(userData)
+      .returning();
 
-    if (updateData.username) updateValues.username = updateData.username;
-    if (updateData.email) {
-      updateValues.email = updateData.email;
-      updateValues.isEmailVerified = false;
-      // TODO: Implement email verification process
-    }
-    if (updateData.password) {
-      updateValues.password = await bcrypt.hash(
-        updateData.password,
-        process.env.SALT_ROUNDS || 10,
-      );
-    }
-    if (updateData.mfaEnabled !== undefined)
-      updateValues.mfaEnabled = updateData.mfaEnabled;
-    if (updateData.mfaSecret) updateValues.mfaSecret = updateData.mfaSecret;
-
-    await this.drizzle.db
-      .update(users)
-      .set(updateValues)
-      .where(eq(users.id, id));
-    return this.findOne(id);
-  }
-
-  async getSessions(userId: number) {
-    const userSessions = await this.drizzle.db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.userId, userId));
-    return userSessions;
+    return newUser;
   }
 }

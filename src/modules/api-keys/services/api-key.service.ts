@@ -1,21 +1,27 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { apiKeys } from '@/infrastructure/database/schema';
-import { Injectable } from '@nestjs/common';
 import { eq, isNull, lte, or, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { CreateApiKeyDto } from '../dto/create-api-key.dto';
 
 @Injectable()
 export class ApiKeyService {
   constructor(private drizzle: DrizzleService) {}
 
-  async createApiKey(name: string, expiresAt?: Date): Promise<string> {
+  async createApiKey(createApiKeyDto: CreateApiKeyDto) {
     const key = uuidv4();
-    await this.drizzle.db.insert(apiKeys).values({
-      name,
-      key,
-      expiresAt: expiresAt || null,
-    });
-    return key;
+    const [newApiKey] = await this.drizzle.db
+      .insert(apiKeys)
+      .values({
+        name: createApiKeyDto.name,
+        key,
+        expiresAt: createApiKeyDto.expiresAt
+          ? new Date(createApiKeyDto.expiresAt)
+          : null,
+      })
+      .returning();
+    return { ...newApiKey, key }; // Include the key in the response
   }
 
   async validateApiKey(key: string): Promise<boolean> {
@@ -45,6 +51,15 @@ export class ApiKeyService {
   }
 
   async revokeApiKey(id: number) {
-    await this.drizzle.db.delete(apiKeys).where(eq(apiKeys.id, id));
+    const [revokedKey] = await this.drizzle.db
+      .delete(apiKeys)
+      .where(eq(apiKeys.id, id))
+      .returning();
+
+    if (!revokedKey) {
+      throw new NotFoundException('API key not found');
+    }
+
+    return { message: 'API key revoked successfully' };
   }
 }

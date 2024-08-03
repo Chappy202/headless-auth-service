@@ -1,61 +1,47 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import {
   permissions,
-  resources,
   rolePermissions,
   userPermissions,
   userRoles,
   roles,
 } from '@/infrastructure/database/schema';
-import { Injectable } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
+import { CreatePermissionDto } from '../dto/create-permission.dto';
 
 @Injectable()
-export class PermissionService {
+export class PermissionsService {
   constructor(private drizzle: DrizzleService) {}
 
-  async listPermissions() {
-    return this.drizzle.db.select().from(permissions);
-  }
-
-  async listResources() {
-    return this.drizzle.db.select().from(resources);
-  }
-
-  async getResourcePermissions(resourceId: number) {
-    return this.drizzle.db
-      .select()
-      .from(permissions)
-      .where(eq(permissions.resourceId, resourceId));
-  }
-
-  async createResource(name: string, description?: string) {
-    const [resource] = await this.drizzle.db
-      .insert(resources)
-      .values({ name, description })
-      .returning();
-    return resource;
-  }
-
-  async createPermission(
-    resourceId: number,
-    type: 'admin' | 'read' | 'write' | '*',
-  ) {
-    const name = `${type}:${(await this.getResourceById(resourceId)).name}`;
+  async createPermission(createPermissionDto: CreatePermissionDto) {
     const [permission] = await this.drizzle.db
       .insert(permissions)
-      .values({ resourceId, type, name })
+      .values({
+        name: createPermissionDto.name,
+        type: createPermissionDto.type,
+        resourceId: createPermissionDto.resourceId,
+      })
       .returning();
     return permission;
   }
 
-  async getResourceById(id: number) {
-    const [resource] = await this.drizzle.db
+  async getPermissions() {
+    return this.drizzle.db.select().from(permissions);
+  }
+
+  async getPermissionById(id: number) {
+    const [permission] = await this.drizzle.db
       .select()
-      .from(resources)
-      .where(eq(resources.id, id))
+      .from(permissions)
+      .where(eq(permissions.id, id))
       .limit(1);
-    return resource;
+
+    if (!permission) {
+      throw new NotFoundException('Permission not found');
+    }
+
+    return permission;
   }
 
   async assignPermissionToRole(permissionId: number, roleId: number) {
@@ -74,80 +60,57 @@ export class PermissionService {
     const userPerms = await this.drizzle.db
       .select({
         permissionName: permissions.name,
-        resourceName: resources.name,
         permissionType: permissions.type,
       })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
-      .leftJoin(resources, eq(permissions.resourceId, resources.id))
       .where(eq(userPermissions.userId, userId));
 
     const rolePerms = await this.drizzle.db
       .select({
         permissionName: permissions.name,
-        resourceName: resources.name,
         permissionType: permissions.type,
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .leftJoin(resources, eq(permissions.resourceId, resources.id))
       .innerJoin(userRoles, eq(rolePermissions.roleId, userRoles.roleId))
       .where(eq(userRoles.userId, userId));
 
-    const allPerms = [...userPerms, ...rolePerms];
-
-    // Handle null resource names (like for '*:*' permission)
-    return allPerms.map((perm) => ({
-      ...perm,
-      resourceName: perm.resourceName || '*',
-      permissionName: perm.permissionName || `${perm.permissionType}:*`,
-    }));
+    return [...userPerms, ...rolePerms];
   }
 
   async checkPermission(userId: number, requiredPermission: string) {
-    // First, check if the user has the super role
     if (await this.userHasSuperRole(userId)) {
       return true;
     }
 
     const userPermissions = await this.getUserPermissions(userId);
-
     const [requiredType, requiredResource] = requiredPermission.split(':');
 
     return userPermissions.some((p) => {
-      // Check for exact match
       if (p.permissionName === requiredPermission) {
         return true;
       }
-
-      // Check for resource-wide admin permission
-      if (p.resourceName === requiredResource && p.permissionType === 'admin') {
-        return true;
-      }
-
-      // Check for wildcard permission on the resource
       if (p.permissionName === `*:${requiredResource}`) {
         return true;
       }
-
-      // Check if the user has a higher level of permission than required
-      if (p.resourceName === requiredResource) {
+      const [permType, permResource] = p.permissionName.split(':');
+      if (permResource === requiredResource) {
         if (
           requiredType === 'read' &&
-          (p.permissionType === 'write' || p.permissionType === 'admin')
+          (permType === 'write' || permType === 'admin')
         ) {
           return true;
         }
-        if (requiredType === 'write' && p.permissionType === 'admin') {
+        if (requiredType === 'write' && permType === 'admin') {
           return true;
         }
       }
-
       return false;
     });
   }
 
-  async userHasSuperRole(userId: number): Promise<boolean> {
+  private async userHasSuperRole(userId: number): Promise<boolean> {
     const superRole = await this.drizzle.db
       .select()
       .from(roles)

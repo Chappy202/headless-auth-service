@@ -1,13 +1,14 @@
-import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { PermissionService } from '../auth/services/permission.service';
 import { AdminController } from './controllers/admin.controller';
 import { AdminService } from './services/admin.service';
+import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
+import { UserModule } from '@/modules/users/user.module';
+import { PermissionsModule } from '@/modules/permissions/permissions.module';
+import { ResourcesModule } from '@/modules/resources/resources.module';
 
 @Module({
-  imports: [DrizzleModule, AuthModule],
-  providers: [AdminService, PermissionService],
+  imports: [DrizzleModule, UserModule, PermissionsModule, ResourcesModule],
   controllers: [AdminController],
+  providers: [AdminService],
 })
 export class AdminModule {}

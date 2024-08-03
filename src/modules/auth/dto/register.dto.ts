@@ -1,26 +1,30 @@
+// src/modules/auth/dto/register.dto.ts
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsEmail,
   MinLength,
   MaxLength,
+  IsNotEmpty,
   Matches,
-  IsOptional,
 } from 'class-validator';
 
 export class RegisterDto {
+  @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   @MinLength(3)
-  @MaxLength(255)
+  @MaxLength(20)
   username: string;
 
-  @IsOptional()
+  @ApiProperty()
   @IsEmail()
-  @MaxLength(255)
-  email?: string;
+  email: string;
 
+  @ApiProperty()
   @IsString()
   @MinLength(8)
-  @MaxLength(72) // bcrypt has a maximum length of 72 bytes
+  @MaxLength(72) // bcrypt max length
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message: 'Password is too weak',
   })

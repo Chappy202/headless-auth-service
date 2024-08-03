@@ -1,35 +1,42 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
 
-  constructor() {
+  constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
-      // Configure your email service here
+      host: this.configService.get<string>('EMAIL_HOST'),
+      port: this.configService.get<number>('EMAIL_PORT'),
+      secure: this.configService.get<boolean>('EMAIL_SECURE'),
+      auth: {
+        user: this.configService.get<string>('EMAIL_USER'),
+        pass: this.configService.get<string>('EMAIL_PASS'),
+      },
     });
   }
 
   async sendVerificationEmail(to: string, token: string) {
-    const verificationLink = `${process.env.EMAIL_VERIFICATION_URL || 'http://yourapp.com/verify-email'}?token=${token}`;
+    const verificationLink = `${this.configService.get<string>('EMAIL_VERIFICATION_URL')}?token=${token}`;
 
     await this.transporter.sendMail({
-      from: process.env.FROM_EMAIL || 'noreply@yourapp.com',
+      from: this.configService.get<string>('EMAIL_FROM'),
       to,
       subject: 'Verify Your Email',
-      html: `Click <a href="${verificationLink}">here</a> to verify your email.`,
+      html: `Please click <a href="${verificationLink}">here</a> to verify your email address.`,
     });
   }
 
   async sendPasswordResetEmail(to: string, token: string) {
-    const resetLink = `${process.env.RESET_PASSWORD_URL || 'http://yourapp.com/reset-password'}?token=${token}`;
+    const resetLink = `${this.configService.get<string>('PASSWORD_RESET_URL')}?token=${token}`;
 
     await this.transporter.sendMail({
-      from: process.env.FROM_EMAIL || 'noreply@yourapp.com',
+      from: this.configService.get<string>('EMAIL_FROM'),
       to,
       subject: 'Reset Your Password',
-      html: `Click <a href="${resetLink}">here</a> to reset your password.`,
+      html: `Please click <a href="${resetLink}">here</a> to reset your password.`,
     });
   }
 }
