@@ -8,12 +8,14 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '@/modules/users/user.module';
 import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
+import { RedisModule } from '@/infrastructure/cache/redis.module';
 
 @Module({
   imports: [
     UserModule,
     PassportModule,
     DrizzleModule,
+    RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

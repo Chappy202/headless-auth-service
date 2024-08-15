@@ -6,6 +6,7 @@ import {
   userPermissions,
   userRoles,
   roles,
+  users,
 } from '@/infrastructure/database/schema';
 import { and, eq } from 'drizzle-orm';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
@@ -48,18 +49,58 @@ export class PermissionsService {
     permissionId: number,
     roleId: number,
   ): Promise<void> {
-    await this.drizzle.db
-      .insert(rolePermissions)
-      .values({ permissionId, roleId });
+    await this.drizzle.db.transaction(async (tx) => {
+      const [existingPermission] = await tx
+        .select()
+        .from(permissions)
+        .where(eq(permissions.id, permissionId))
+        .limit(1);
+
+      if (!existingPermission) {
+        throw new NotFoundException('Permission not found');
+      }
+
+      const [existingRole] = await tx
+        .select()
+        .from(roles)
+        .where(eq(roles.id, roleId))
+        .limit(1);
+
+      if (!existingRole) {
+        throw new NotFoundException('Role not found');
+      }
+
+      await tx.insert(rolePermissions).values({ permissionId, roleId });
+    });
   }
 
   async assignPermissionToUser(
     permissionId: number,
     userId: number,
   ): Promise<void> {
-    await this.drizzle.db
-      .insert(userPermissions)
-      .values({ permissionId, userId });
+    await this.drizzle.db.transaction(async (tx) => {
+      const [existingPermission] = await tx
+        .select()
+        .from(permissions)
+        .where(eq(permissions.id, permissionId))
+        .limit(1);
+
+      if (!existingPermission) {
+        throw new NotFoundException('Permission not found');
+      }
+
+      const [existingUser] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (!existingUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      await tx.insert(userPermissions).values({ permissionId, userId });
+    });
   }
 
   async getUserPermissions(userId: number): Promise<PermissionResponseDto[]> {

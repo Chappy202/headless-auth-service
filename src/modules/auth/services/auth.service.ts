@@ -3,12 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '@/modules/users/services/user.service';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
+import { RedisService } from '@/infrastructure/cache/redis.service';
 import { comparePassword, hashPassword } from '@/common/utils/crypto.util';
 import { LoginDto } from '../dto/login.dto';
 import { LoginResponseDto } from '../dto/login-response.dto';
 import { RegisterDto } from '../dto/register.dto';
-import { blacklistedTokens } from '@/infrastructure/database/schema';
-import { eq, lt } from 'drizzle-orm';
+import { users, userRoles, roles } from '@/infrastructure/database/schema';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class AuthService {
@@ -17,14 +18,29 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private drizzle: DrizzleService,
+    private redisService: RedisService,
   ) {}
+
+  private async generateToken(user: any): Promise<string> {
+    const payload = { username: user.username, sub: user.id };
+    const access_token = this.jwtService.sign(payload);
+
+    await this.redisService
+      .getClient()
+      .set(
+        `auth_token:${access_token}`,
+        JSON.stringify({ userId: user.id, username: user.username }),
+        'EX',
+        this.configService.get<number>('JWT_EXPIRATION_SECONDS'),
+      );
+
+    return access_token;
+  }
 
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.userService.findByUsername(username);
     if (user && (await comparePassword(pass, user.password))) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
+      return this.userService.findByIdSecure(user.id);
     }
     return null;
   }
@@ -34,23 +50,42 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const payload = { username: user.username, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    const access_token = await this.generateToken(user);
+    return { access_token };
   }
 
   async register(registerDto: RegisterDto): Promise<LoginResponseDto> {
     const hashedPassword = await hashPassword(registerDto.password);
-    const user = await this.userService.create({
-      ...registerDto,
-      password: hashedPassword,
+
+    const user = await this.drizzle.db.transaction(async (tx) => {
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          ...registerDto,
+          password: hashedPassword,
+        })
+        .returning();
+
+      const [defaultRole] = await tx
+        .select()
+        .from(roles)
+        .where(eq(roles.name, 'user'))
+        .limit(1);
+
+      if (!defaultRole) {
+        throw new Error('Default role not found');
+      }
+
+      await tx.insert(userRoles).values({
+        userId: newUser.id,
+        roleId: defaultRole.id,
+      });
+
+      return newUser;
     });
 
-    const payload = { username: user.username, sub: user.id };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+    const access_token = await this.generateToken(user);
+    return { access_token };
   }
 
   async logout(token: string): Promise<void> {
@@ -58,29 +93,42 @@ export class AuthService {
   }
 
   private async blacklistToken(token: string): Promise<void> {
-    const decoded = this.jwtService.decode(token) as { exp: number };
-    const expiresAt = new Date(decoded.exp * 1000);
+    // Remove the token from active tokens
+    await this.redisService.getClient().del(`auth_token:${token}`);
 
-    await this.drizzle.db.insert(blacklistedTokens).values({
-      token,
-      expiresAt,
-    });
+    // Add the token to the blacklist
+    const decodedToken = this.jwtService.decode(token) as { exp: number };
+    const expirationTime = decodedToken.exp;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const timeToExpire = expirationTime - currentTime;
+
+    if (timeToExpire > 0) {
+      await this.redisService
+        .getClient()
+        .set(`blacklist:${token}`, 'true', 'EX', timeToExpire);
+    }
   }
 
   async isTokenBlacklisted(token: string): Promise<boolean> {
-    const [blacklistedToken] = await this.drizzle.db
-      .select()
-      .from(blacklistedTokens)
-      .where(eq(blacklistedTokens.token, token))
-      .limit(1);
-
-    return !!blacklistedToken;
+    const blacklisted = await this.redisService
+      .getClient()
+      .get(`blacklist:${token}`);
+    return !!blacklisted;
   }
 
-  async cleanupExpiredTokens(): Promise<void> {
-    const now = new Date();
-    await this.drizzle.db
-      .delete(blacklistedTokens)
-      .where(lt(blacklistedTokens.expiresAt, now));
+  async validateToken(token: string): Promise<any> {
+    const isBlacklisted = await this.isTokenBlacklisted(token);
+    if (isBlacklisted) {
+      throw new UnauthorizedException('Token is blacklisted');
+    }
+
+    const tokenData = await this.redisService
+      .getClient()
+      .get(`auth_token:${token}`);
+    if (!tokenData) {
+      throw new UnauthorizedException('Invalid token');
+    }
+
+    return JSON.parse(tokenData);
   }
 }

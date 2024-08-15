@@ -1,5 +1,3 @@
-// src/drizzle/seed.ts
-
 import { DrizzleService } from './drizzle.service';
 import {
   users,
@@ -23,6 +21,15 @@ export async function seed(drizzle: DrizzleService, config: ConfigService) {
 
   console.log('Seeding initial data...');
 
+  // Create roles
+  const [superRole] = await db
+    .insert(roles)
+    .values({ name: 'super' })
+    .returning();
+
+  // Create admin and user roles (we'll keep these for future use)
+  await db.insert(roles).values([{ name: 'admin' }, { name: 'user' }]);
+
   // Create super user permission
   const [superPermission] = await db
     .insert(permissions)
@@ -30,14 +37,6 @@ export async function seed(drizzle: DrizzleService, config: ConfigService) {
       name: '*:*',
       type: 'admin',
       resourceId: null, // This represents a global resource
-    })
-    .returning();
-
-  // Create super role
-  const [superRole] = await db
-    .insert(roles)
-    .values({
-      name: 'super',
     })
     .returning();
 

@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { hashPassword } from '@/common/utils/crypto.util';
+import { encrypt, decrypt } from '@/common/utils/encryption.util';
 
 @Injectable()
 export class UserService {
@@ -19,6 +20,10 @@ export class UserService {
       .where(eq(users.username, username))
       .limit(1);
 
+    if (user && user.email) {
+      user.email = decrypt(user.email);
+    }
+
     return user || null;
   }
 
@@ -28,6 +33,34 @@ export class UserService {
       .from(users)
       .where(eq(users.id, id))
       .limit(1);
+
+    if (user && user.email) {
+      user.email = decrypt(user.email);
+    }
+
+    return user || null;
+  }
+
+  async findByIdSecure(
+    id: number,
+  ): Promise<Omit<typeof users.$inferSelect, 'password'> | null> {
+    const [user] = await this.drizzle.db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isEmailVerified: users.isEmailVerified,
+        createdAt: users.createdAt,
+        mfaEnabled: users.mfaEnabled,
+        mfaSecret: users.mfaSecret,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+
+    if (user && user.email) {
+      user.email = decrypt(user.email);
+    }
 
     return user || null;
   }
@@ -53,6 +86,10 @@ export class UserService {
       updateData.password = await hashPassword(updateProfileDto.password);
     }
 
+    if (updateProfileDto.email) {
+      updateData.email = encrypt(updateProfileDto.email);
+    }
+
     const [updatedUser] = await this.drizzle.db
       .update(users)
       .set(updateData)
@@ -69,9 +106,14 @@ export class UserService {
   async create(
     userData: Omit<typeof users.$inferInsert, 'id' | 'createdAt'>,
   ): Promise<typeof users.$inferSelect> {
+    const dataToInsert = { ...userData };
+    if (dataToInsert.email) {
+      dataToInsert.email = encrypt(dataToInsert.email);
+    }
+
     const [newUser] = await this.drizzle.db
       .insert(users)
-      .values(userData)
+      .values(dataToInsert)
       .returning();
 
     return newUser;

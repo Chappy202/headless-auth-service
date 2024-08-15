@@ -3,8 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-// import { CustomThrottlerGuard } from './common/guards/throttler.guard';
-// import { ThrottlerGuard } from '@nestjs/throttler';
+import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -50,10 +49,11 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalFilters(new DatabaseExceptionFilter());
 
-  // TODO: Uncomment this to enable the throttler guard
-  // const throttlerGuard = app.get(ThrottlerGuard);
-  // app.useGlobalGuards(new CustomThrottlerGuard(throttlerGuard));
+  // TODO
+  // const throttlerGuard = app.get(CustomThrottlerGuard);
+  // app.useGlobalGuards(throttlerGuard);
 
   await app.listen(3000);
 }

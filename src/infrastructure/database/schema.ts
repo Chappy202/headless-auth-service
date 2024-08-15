@@ -86,13 +86,6 @@ export const userRoles = authSchema.table('user_roles', {
   roleId: integer('role_id').references(() => roles.id),
 });
 
-export const blacklistedTokens = authSchema.table('blacklisted_tokens', {
-  id: serial('id').primaryKey(),
-  token: text('token').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
 export const apiKeys = authSchema.table('api_keys', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),

@@ -47,7 +47,7 @@ export class AdminService {
   }
 
   async getUserById(id: number): Promise<UserResponseDto> {
-    const user = await this.userService.findById(id);
+    const user = await this.userService.findByIdSecure(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -119,7 +119,7 @@ export class AdminService {
   }
 
   private mapToUserResponseDto(
-    user: typeof users.$inferSelect,
+    user: Omit<typeof users.$inferSelect, 'password'>,
   ): UserResponseDto {
     return {
       id: user.id,
