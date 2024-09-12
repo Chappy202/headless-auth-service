@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
@@ -106,20 +107,39 @@ export class AdminService {
     id: number,
     updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    if (updateUserDto.password) {
-      updateUserDto.password = await hashPassword(updateUserDto.password);
-    }
-    const [updatedUser] = await this.drizzle.db
-      .update(users)
-      .set(updateUserDto)
-      .where(eq(users.id, id))
-      .returning();
+    try {
+      const updateData: Partial<typeof users.$inferInsert> = {
+        ...updateUserDto,
+      };
 
-    if (!updatedUser) {
-      throw new NotFoundException('User not found');
-    }
+      if (updateUserDto.password) {
+        updateData.password = await hashPassword(updateUserDto.password);
+      }
 
-    return this.mapToUserResponseDto(updatedUser);
+      if (updateUserDto.email) {
+        updateData.email = encrypt(updateUserDto.email);
+      }
+
+      const [updatedUser] = await this.drizzle.db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, id))
+        .returning();
+
+      if (!updatedUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      return this.mapToUserResponseDto(updatedUser);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while updating the user',
+      );
+    }
   }
 
   async deleteUser(id: number): Promise<UserResponseDto> {
@@ -175,10 +195,20 @@ export class AdminService {
   private mapToUserResponseDto(
     user: Omit<typeof users.$inferSelect, 'password'>,
   ): UserResponseDto {
+    let decryptedEmail = null;
+    if (user.email) {
+      try {
+        decryptedEmail = decrypt(user.email);
+      } catch (error) {
+        console.error('Error decrypting email:', error);
+        // Leave decryptedEmail as null
+      }
+    }
+
     return {
       id: user.id,
       username: user.username,
-      email: user.email ? decrypt(user.email) : null,
+      email: decryptedEmail,
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       mfaEnabled: user.mfaEnabled,
