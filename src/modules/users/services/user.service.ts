@@ -58,11 +58,11 @@ export class UserService {
       .where(eq(users.id, id))
       .limit(1);
 
-    if (user && user.email) {
-      user.email = decrypt(user.email);
+    if (!user) {
+      return null;
     }
 
-    return user || null;
+    return user;
   }
 
   async getUserProfile(id: number): Promise<UserProfileDto> {
