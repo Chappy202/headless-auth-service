@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
-import { users } from '@/infrastructure/database/schema';
+import { roles, userRoles, users } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
@@ -35,15 +35,38 @@ export class AdminService {
       const encryptedEmail = createUserDto.email
         ? encrypt(createUserDto.email)
         : null;
-      const user = await this.userService.create({
-        ...createUserDto,
-        password: hashedPassword,
-        email: encryptedEmail,
+
+      const user = await this.drizzle.db.transaction(async (tx) => {
+        const [newUser] = await tx
+          .insert(users)
+          .values({
+            ...createUserDto,
+            password: hashedPassword,
+            email: encryptedEmail,
+          })
+          .returning();
+
+        const [defaultRole] = await tx
+          .select()
+          .from(roles)
+          .where(eq(roles.name, 'user'))
+          .limit(1);
+
+        if (!defaultRole) {
+          throw new Error('Default role not found');
+        }
+
+        await tx.insert(userRoles).values({
+          userId: newUser.id,
+          roleId: defaultRole.id,
+        });
+
+        return newUser;
       });
+
       return this.mapToUserResponseDto(user);
     } catch (error) {
       if (error.code === '23505') {
-        // PostgreSQL unique constraint violation code
         throw new ConflictException('Username or email already exists');
       }
       throw error;
@@ -92,16 +115,22 @@ export class AdminService {
   }
 
   async deleteUser(id: number): Promise<UserResponseDto> {
-    const [deletedUser] = await this.drizzle.db
-      .delete(users)
-      .where(eq(users.id, id))
-      .returning();
+    return this.drizzle.db.transaction(async (tx) => {
+      // Delete associated records in user_roles
+      await tx.delete(userRoles).where(eq(userRoles.userId, id));
 
-    if (!deletedUser) {
-      throw new NotFoundException('User not found');
-    }
+      // Now delete the user
+      const [deletedUser] = await tx
+        .delete(users)
+        .where(eq(users.id, id))
+        .returning();
 
-    return this.mapToUserResponseDto(deletedUser);
+      if (!deletedUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      return this.mapToUserResponseDto(deletedUser);
+    });
   }
 
   async assignPermissionToUser(
