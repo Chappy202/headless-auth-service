@@ -66,7 +66,19 @@ export class UserService {
   }
 
   async getUserProfile(id: number): Promise<UserProfileDto> {
-    const user = await this.findById(id);
+    const [user] = await this.drizzle.db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        isEmailVerified: users.isEmailVerified,
+        createdAt: users.createdAt,
+        mfaEnabled: users.mfaEnabled,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -123,14 +135,16 @@ export class UserService {
     return newUser;
   }
 
-  private mapToUserProfileDto(user: typeof users.$inferSelect): UserProfileDto {
+  private mapToUserProfileDto(
+    user: Partial<typeof users.$inferSelect>,
+  ): UserProfileDto {
     return {
-      id: user.id,
-      username: user.username,
+      id: user.id!,
+      username: user.username!,
       email: user.email ? decrypt(user.email) : null,
-      isEmailVerified: user.isEmailVerified,
-      createdAt: user.createdAt,
-      mfaEnabled: user.mfaEnabled,
+      isEmailVerified: user.isEmailVerified!,
+      createdAt: user.createdAt!,
+      mfaEnabled: user.mfaEnabled!,
     };
   }
 }

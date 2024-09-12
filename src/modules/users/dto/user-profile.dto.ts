@@ -10,8 +10,9 @@ export class UserProfileDto {
   @ApiProperty({
     example: 'john@example.com',
     description: 'The email of the user',
+    nullable: true,
   })
-  email: string;
+  email: string | null;
 
   @ApiProperty({ example: true, description: 'Whether the email is verified' })
   isEmailVerified: boolean;
