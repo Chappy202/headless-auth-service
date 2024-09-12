@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '@/modules/users/services/user.service';
@@ -25,15 +30,22 @@ export class AuthService {
     const payload = { username: user.username, sub: user.id };
     const access_token = this.jwtService.sign(payload);
 
+    const expirationSeconds = parseInt(
+      this.configService.get('JWT_EXPIRATION'),
+      10,
+    );
+    if (isNaN(expirationSeconds)) {
+      throw new Error('Invalid JWT_EXPIRATION configuration');
+    }
+
     await this.redisService
       .getClient()
       .set(
         `auth_token:${access_token}`,
         JSON.stringify({ userId: user.id, username: user.username }),
         'EX',
-        this.configService.get<number>('JWT_EXPIRATION_SECONDS'),
+        expirationSeconds,
       );
-
     return access_token;
   }
 
@@ -55,37 +67,47 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<LoginResponseDto> {
-    const hashedPassword = await hashPassword(registerDto.password);
+    try {
+      const hashedPassword = await hashPassword(registerDto.password);
 
-    const user = await this.drizzle.db.transaction(async (tx) => {
-      const [newUser] = await tx
-        .insert(users)
-        .values({
-          ...registerDto,
-          password: hashedPassword,
-        })
-        .returning();
+      const user = await this.drizzle.db.transaction(async (tx) => {
+        const [newUser] = await tx
+          .insert(users)
+          .values({
+            ...registerDto,
+            password: hashedPassword,
+          })
+          .returning();
 
-      const [defaultRole] = await tx
-        .select()
-        .from(roles)
-        .where(eq(roles.name, 'user'))
-        .limit(1);
+        const [defaultRole] = await tx
+          .select()
+          .from(roles)
+          .where(eq(roles.name, 'user'))
+          .limit(1);
 
-      if (!defaultRole) {
-        throw new Error('Default role not found');
-      }
+        if (!defaultRole) {
+          throw new Error('Default role not found');
+        }
 
-      await tx.insert(userRoles).values({
-        userId: newUser.id,
-        roleId: defaultRole.id,
+        await tx.insert(userRoles).values({
+          userId: newUser.id,
+          roleId: defaultRole.id,
+        });
+
+        return newUser;
       });
 
-      return newUser;
-    });
-
-    const access_token = await this.generateToken(user);
-    return { access_token };
+      const access_token = await this.generateToken(user);
+      return { access_token };
+    } catch (error) {
+      if (error.code === '23505') {
+        // PostgreSQL unique constraint violation code
+        throw new ConflictException('Username or email already exists');
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while registering the user',
+      );
+    }
   }
 
   async logout(token: string): Promise<void> {
