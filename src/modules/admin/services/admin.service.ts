@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -89,6 +90,11 @@ export class AdminService {
   }
 
   async getUserById(id: number): Promise<UserResponseDto> {
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new BadRequestException(
+        'Invalid user ID. User ID must be a positive integer.',
+      );
+    }
     const user = await this.userService.findByIdSecure(id);
     if (!user) {
       throw new NotFoundException('User not found');

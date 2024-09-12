@@ -9,6 +9,8 @@ import {
   UseGuards,
   Query,
   ConflictException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,6 +19,7 @@ import {
   ApiResponse,
   ApiQuery,
   ApiHeader,
+  ApiParam,
 } from '@nestjs/swagger';
 import { PermissionGuard } from '@/common/guards/permission.guard';
 import { RequirePermission } from '@/common/decorators/permission.decorator';
@@ -123,29 +126,42 @@ export class AdminController {
   }
 
   @Get('users/:id')
-  @RequirePermission('read:users')
   @ApiOperation({ summary: 'Get a user by id' })
+  @ApiParam({ name: 'id', type: 'number' })
   @ApiResponse({
     status: 200,
-    description: 'Return the user.',
+    description: 'Returns the user details.',
     type: UserResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID format',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'User not found',
     type: ErrorResponseDto,
   })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
   async getUserById(@Param('id') id: string): Promise<UserResponseDto> {
-    return this.adminService.getUserById(+id);
+    const userId = parseInt(id, 10);
+    if (isNaN(userId)) {
+      throw new BadRequestException(
+        'Invalid user ID format. User ID must be a number.',
+      );
+    }
+    try {
+      const user = await this.adminService.getUserById(userId);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      return user;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Invalid user ID');
+    }
   }
 
   @Put('users/:id')
