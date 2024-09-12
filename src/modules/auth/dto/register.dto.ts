@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsNotEmpty,
   Matches,
+  IsOptional,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -19,9 +20,11 @@ export class RegisterDto {
   @ApiProperty({
     example: 'john@example.com',
     description: 'The email of the user',
+    required: false,
   })
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @ApiProperty({
     example: 'Password123!',
