@@ -249,6 +249,16 @@ export class AdminController {
     description: 'The permission has been assigned to the user.',
   })
   @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid permission ID',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'User or permission not found',
     type: ErrorResponseDto,
@@ -266,7 +276,19 @@ export class AdminController {
     @Param('userId') userId: string,
     @Param('permissionId') permissionId: string,
   ): Promise<void> {
-    return this.adminService.assignPermissionToUser(+userId, +permissionId);
+    const _userId = parseInt(userId, 10);
+    if (isNaN(_userId)) {
+      throw new BadRequestException(
+        'Invalid user ID. User ID must be a positive integer.',
+      );
+    }
+    const _permissionId = parseInt(permissionId, 10);
+    if (isNaN(_permissionId)) {
+      throw new BadRequestException(
+        'Invalid permission ID. Permission ID must be a positive integer.',
+      );
+    }
+    return this.adminService.assignPermissionToUser(+_userId, +_permissionId);
   }
 
   @Get('users/:userId/permissions')
@@ -276,6 +298,11 @@ export class AdminController {
     status: 200,
     description: 'Return the user permissions.',
     type: [PermissionResponseDto],
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
@@ -294,7 +321,13 @@ export class AdminController {
   async getUserPermissions(
     @Param('userId') userId: string,
   ): Promise<PermissionResponseDto[]> {
-    return this.adminService.getUserPermissions(+userId);
+    const _userId = parseInt(userId, 10);
+    if (isNaN(_userId) || _userId <= 0) {
+      throw new BadRequestException(
+        'Invalid user ID. User ID must be a positive integer.',
+      );
+    }
+    return this.adminService.getUserPermissions(+_userId);
   }
 
   @Post('resources')
