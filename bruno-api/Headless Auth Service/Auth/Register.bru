@@ -1,11 +1,11 @@
 meta {
   name: Register
   type: http
-  seq: 4
+  seq: 1
 }
 
 post {
-  url: {{url}}/auth/register
+  url: {{url}}/{{version}}/auth/register
   body: json
   auth: none
 }
@@ -16,8 +16,13 @@ headers {
 
 body:json {
   {
-    "username": "user",
-    /*"email": "newuser@example.com",*/
-    "password": "Securepassword02"
+    "username": "newuser2",
+    /*"email": "newuser@example.com", /*Optional Field */
+    "password": "Password01"
   }
+}
+
+tests {
+  let data = res.getBody();
+  bru.setVar("token", data.access_token);
 }

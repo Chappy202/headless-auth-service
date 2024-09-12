@@ -1,0 +1,19 @@
+meta {
+  name: Resource Details
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{url}}/{{version}}/resources/:resourceId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  resourceId: 1
+}
+
+auth:bearer {
+  token: {{token}}
+}

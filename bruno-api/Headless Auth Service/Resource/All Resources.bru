@@ -1,0 +1,15 @@
+meta {
+  name: All Resources
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{url}}/{{version}}/resources
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

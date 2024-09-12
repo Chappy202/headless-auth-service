@@ -1,0 +1,27 @@
+meta {
+  name: New User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/{{version}}/admin/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "username": "newuser",
+    "email": "newuser@example.com",
+    "password": "Password123!"
+  }
+}

@@ -1,19 +1,19 @@
 meta {
   name: Logout
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
-  url: {{url}}/auth/logout
+  url: {{url}}/{{version}}/auth/logout
   body: none
   auth: bearer
 }
 
-headers {
-  Content-Type: application/json
+auth:bearer {
+  token: {{token}}
 }
 
-auth:bearer {
-  token: {{access_token}}
+tests {
+  bru.setVar("token", "");
 }

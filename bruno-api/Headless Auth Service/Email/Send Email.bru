@@ -1,0 +1,27 @@
+meta {
+  name: Send Email
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/{{version}}/email/send
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "to": "recipient@example.com",
+    "subject": "Test Email",
+    "content": "This is a test email"
+  }
+}

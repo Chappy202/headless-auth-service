@@ -1,0 +1,15 @@
+meta {
+  name: User Details
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{url}}/{{version}}/admin/users/%7BuserId%7D
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

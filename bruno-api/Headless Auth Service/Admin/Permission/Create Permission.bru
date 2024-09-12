@@ -1,0 +1,27 @@
+meta {
+  name: Create Permission
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{url}}/{{version}}/admin/permissions
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "read:newresource",
+    "type": "read",
+    "resourceId": 1
+  }
+}
