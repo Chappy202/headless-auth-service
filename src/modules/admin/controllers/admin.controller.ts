@@ -173,6 +173,11 @@ export class AdminController {
     type: UserResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'User not found',
     type: ErrorResponseDto,
@@ -190,7 +195,13 @@ export class AdminController {
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
-    return this.adminService.updateUser(+id, updateUserDto);
+    const userId = parseInt(id, 10);
+    if (isNaN(userId) || userId <= 0) {
+      throw new BadRequestException(
+        'Invalid user ID. User ID must be a positive integer.',
+      );
+    }
+    return this.adminService.updateUser(userId, updateUserDto);
   }
 
   @Delete('users/:id')
