@@ -130,6 +130,12 @@ export class PermissionsService {
     }
 
     const userPermissions = await this.getUserPermissions(userId);
+
+    // Check for global wildcard permission
+    if (userPermissions.some((p) => p.name === '*:*')) {
+      return true;
+    }
+
     const [requiredType, requiredResource] = requiredPermission.split(':');
 
     return userPermissions.some((p) => {
