@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.3.1"></a>
+## [0.3.1](https://github.com/Chappy202/headless-auth-service/compare/v0.3.0...v0.3.1) (2024-09-12)
+
+
+### :bug: Bug Fixes
+
+* fix super user permission override not working when applied to not super role users ([42be730](https://github.com/Chappy202/headless-auth-service/commit/42be730))
+
+
+### :sparkle: Features
+
+* add roles and permission details to user details responses ([4d935d6](https://github.com/Chappy202/headless-auth-service/commit/4d935d6))
+
+
+### :white_check_mark: Tests
+
+* update bruno collections ([9b5f403](https://github.com/Chappy202/headless-auth-service/commit/9b5f403))
+
+
+### Chores
+
+* add contributing readme ([806dfd8](https://github.com/Chappy202/headless-auth-service/commit/806dfd8))
+
 <a name="0.3.0"></a>
 # 0.3.0 (2024-09-12)
 
