@@ -116,6 +116,10 @@ export class UserService {
       .values(dataToInsert)
       .returning();
 
+    if (newUser.email) {
+      newUser.email = decrypt(newUser.email);
+    }
+
     return newUser;
   }
 
@@ -123,7 +127,7 @@ export class UserService {
     return {
       id: user.id,
       username: user.username,
-      email: user.email,
+      email: user.email ? decrypt(user.email) : null,
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       mfaEnabled: user.mfaEnabled,

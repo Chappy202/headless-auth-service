@@ -14,6 +14,7 @@ import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission
 import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
 import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
 import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
+import { decrypt, encrypt } from '@/common/utils/encryption.util';
 
 @Injectable()
 export class AdminService {
@@ -26,9 +27,13 @@ export class AdminService {
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const hashedPassword = await hashPassword(createUserDto.password);
+    const encryptedEmail = createUserDto.email
+      ? encrypt(createUserDto.email)
+      : null;
     const user = await this.userService.create({
       ...createUserDto,
       password: hashedPassword,
+      email: encryptedEmail,
     });
     return this.mapToUserResponseDto(user);
   }
@@ -124,7 +129,7 @@ export class AdminService {
     return {
       id: user.id,
       username: user.username,
-      email: user.email,
+      email: user.email ? decrypt(user.email) : null,
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       mfaEnabled: user.mfaEnabled,

@@ -4,6 +4,8 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
+import { ConfigService } from '@nestjs/config';
+import { initializeEncryption } from './common/utils/encryption.util';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -16,6 +18,9 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+
+  const configService = app.get(ConfigService);
+  initializeEncryption(configService);
 
   const allowedOrigins = [
     'http://localhost:3000',
