@@ -1,3 +1,5 @@
+// src/modules/admin/dto/create-user.dto.ts
+
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
@@ -21,10 +23,11 @@ export class CreateUserDto {
   @ApiProperty({
     example: 'john@example.com',
     description: 'The email of the user',
+    required: false,
   })
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @ApiProperty({
     example: 'Password123!',

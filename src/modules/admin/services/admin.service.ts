@@ -40,9 +40,11 @@ export class AdminService {
         const [newUser] = await tx
           .insert(users)
           .values({
-            ...createUserDto,
+            username: createUserDto.username,
             password: hashedPassword,
             email: encryptedEmail,
+            isEmailVerified: createUserDto.isEmailVerified || false,
+            mfaEnabled: createUserDto.mfaEnabled || false,
           })
           .returning();
 

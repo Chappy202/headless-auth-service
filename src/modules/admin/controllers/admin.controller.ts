@@ -52,6 +52,11 @@ export class AdminController {
     description: 'Username or email already exists',
     type: ErrorResponseDto,
   })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
   @ApiHeader({
     name: 'Authorization',
     description: 'JWT token',
