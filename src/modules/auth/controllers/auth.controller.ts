@@ -6,6 +6,7 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  ConflictException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -55,6 +56,11 @@ export class AuthController {
     type: LoginResponseDto,
   })
   @ApiResponse({
+    status: 409,
+    description: 'Username or email already exists',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 400,
     description: 'Bad request',
     type: ErrorResponseDto,
@@ -62,7 +68,14 @@ export class AuthController {
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
   async register(@Body() registerDto: RegisterDto): Promise<LoginResponseDto> {
-    return this.authService.register(registerDto);
+    try {
+      return await this.authService.register(registerDto);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
   }
 
   @Post('logout')

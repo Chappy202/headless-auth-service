@@ -80,7 +80,7 @@ export class AuthService {
           .values({
             ...registerDto,
             password: hashedPassword,
-            email: encryptedEmail, // Use the encrypted email
+            email: encryptedEmail,
           })
           .returning();
 
@@ -106,7 +106,6 @@ export class AuthService {
       return { access_token };
     } catch (error) {
       if (error.code === '23505') {
-        // PostgreSQL unique constraint violation code
         throw new ConflictException('Username or email already exists');
       }
       throw new InternalServerErrorException(

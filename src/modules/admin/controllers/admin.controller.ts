@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Query,
+  ConflictException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -47,8 +48,8 @@ export class AdminController {
     type: UserResponseDto,
   })
   @ApiResponse({
-    status: 400,
-    description: 'Bad request',
+    status: 409,
+    description: 'Username or email already exists',
     type: ErrorResponseDto,
   })
   @ApiHeader({
@@ -63,7 +64,14 @@ export class AdminController {
   async createUser(
     @Body() createUserDto: CreateUserDto,
   ): Promise<UserResponseDto> {
-    return this.adminService.createUser(createUserDto);
+    try {
+      return await this.adminService.createUser(createUserDto);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
   }
 
   @Get('users')
