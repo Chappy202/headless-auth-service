@@ -213,6 +213,11 @@ export class AdminController {
     type: UserResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'User not found',
     type: ErrorResponseDto,
@@ -227,7 +232,13 @@ export class AdminController {
     },
   })
   async deleteUser(@Param('id') id: string): Promise<UserResponseDto> {
-    return this.adminService.deleteUser(+id);
+    const userId = parseInt(id, 10);
+    if (isNaN(userId) || userId <= 0) {
+      throw new BadRequestException(
+        'Invalid user ID. User ID must be a positive integer.',
+      );
+    }
+    return this.adminService.deleteUser(userId);
   }
 
   @Post('users/:userId/permissions/:permissionId')

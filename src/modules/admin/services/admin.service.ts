@@ -143,22 +143,32 @@ export class AdminService {
   }
 
   async deleteUser(id: number): Promise<UserResponseDto> {
-    return this.drizzle.db.transaction(async (tx) => {
-      // Delete associated records in user_roles
-      await tx.delete(userRoles).where(eq(userRoles.userId, id));
+    try {
+      return this.drizzle.db.transaction(async (tx) => {
+        // Delete associated records in user_roles
+        await tx.delete(userRoles).where(eq(userRoles.userId, id));
 
-      // Now delete the user
-      const [deletedUser] = await tx
-        .delete(users)
-        .where(eq(users.id, id))
-        .returning();
+        // Now delete the user
+        const [deletedUser] = await tx
+          .delete(users)
+          .where(eq(users.id, id))
+          .returning();
 
-      if (!deletedUser) {
-        throw new NotFoundException('User not found');
+        if (!deletedUser) {
+          throw new NotFoundException('User not found');
+        }
+
+        return this.mapToUserResponseDto(deletedUser);
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
       }
-
-      return this.mapToUserResponseDto(deletedUser);
-    });
+      throw new InternalServerErrorException(
+        'An error occurred while deleting the user',
+      );
+    }
   }
 
   async assignPermissionToUser(
