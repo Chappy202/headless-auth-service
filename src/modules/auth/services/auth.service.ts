@@ -15,6 +15,7 @@ import { LoginResponseDto } from '../dto/login-response.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { users, userRoles, roles } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
+import { encrypt } from '@/common/utils/encryption.util';
 
 @Injectable()
 export class AuthService {
@@ -69,6 +70,9 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<LoginResponseDto> {
     try {
       const hashedPassword = await hashPassword(registerDto.password);
+      const encryptedEmail = registerDto.email
+        ? encrypt(registerDto.email)
+        : null;
 
       const user = await this.drizzle.db.transaction(async (tx) => {
         const [newUser] = await tx
@@ -76,6 +80,7 @@ export class AuthService {
           .values({
             ...registerDto,
             password: hashedPassword,
+            email: encryptedEmail, // Use the encrypted email
           })
           .returning();
 
