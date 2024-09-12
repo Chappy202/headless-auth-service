@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { users } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
@@ -26,16 +30,24 @@ export class AdminService {
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    const hashedPassword = await hashPassword(createUserDto.password);
-    const encryptedEmail = createUserDto.email
-      ? encrypt(createUserDto.email)
-      : null;
-    const user = await this.userService.create({
-      ...createUserDto,
-      password: hashedPassword,
-      email: encryptedEmail,
-    });
-    return this.mapToUserResponseDto(user);
+    try {
+      const hashedPassword = await hashPassword(createUserDto.password);
+      const encryptedEmail = createUserDto.email
+        ? encrypt(createUserDto.email)
+        : null;
+      const user = await this.userService.create({
+        ...createUserDto,
+        password: hashedPassword,
+        email: encryptedEmail,
+      });
+      return this.mapToUserResponseDto(user);
+    } catch (error) {
+      if (error.code === '23505') {
+        // PostgreSQL unique constraint violation code
+        throw new ConflictException('Username or email already exists');
+      }
+      throw error;
+    }
   }
 
   async getUsers(paginationDto: PaginationDto): Promise<UserResponseDto[]> {
