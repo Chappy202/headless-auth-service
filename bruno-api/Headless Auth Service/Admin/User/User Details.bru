@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{url}}/{{version}}/admin/users/%7BuserId%7D
+  url: {{url}}/{{version}}/admin/users/:userId
   body: none
   auth: bearer
+}
+
+params:path {
+  userId: {{userId}}
 }
 
 auth:bearer {
