@@ -34,6 +34,8 @@ import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission
 import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
 import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
 import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
+import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -131,7 +133,7 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'Returns the user details.',
-    type: UserResponseDto,
+    type: UserProfileDto,
   })
   @ApiResponse({
     status: 400,
@@ -143,7 +145,7 @@ export class AdminController {
     description: 'User not found',
     type: ErrorResponseDto,
   })
-  async getUserById(@Param('id') id: string): Promise<UserResponseDto> {
+  async getUserById(@Param('id') id: string): Promise<UserProfileDto> {
     const userId = parseInt(id, 10);
     if (isNaN(userId)) {
       throw new BadRequestException(
@@ -320,7 +322,7 @@ export class AdminController {
   })
   async getUserPermissions(
     @Param('userId') userId: string,
-  ): Promise<PermissionResponseDto[]> {
+  ): Promise<PermissionListResponseDto[]> {
     const _userId = parseInt(userId, 10);
     if (isNaN(_userId) || _userId <= 0) {
       throw new BadRequestException(
@@ -403,7 +405,7 @@ export class AdminController {
   })
   async createPermission(
     @Body() createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionResponseDto> {
+  ): Promise<PermissionListResponseDto> {
     return this.adminService.createPermission(createPermissionDto);
   }
 
@@ -424,7 +426,7 @@ export class AdminController {
       example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     },
   })
-  async getPermissions(): Promise<PermissionResponseDto[]> {
+  async getPermissions(): Promise<PermissionListResponseDto[]> {
     return this.adminService.getPermissions();
   }
 }

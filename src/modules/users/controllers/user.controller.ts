@@ -10,6 +10,7 @@ import { UserService } from '../services/user.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
+import { ErrorResponseDto } from '@/common/dto/error-response.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -44,6 +45,11 @@ export class UserController {
     status: 200,
     description: 'Returns the updated user profile.',
     type: UserProfileDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
   })
   @ApiHeader({
     name: 'Authorization',

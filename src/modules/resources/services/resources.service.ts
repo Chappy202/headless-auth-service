@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { CreateResourceDto } from '../dto/create-resource.dto';
 import { ResourceResponseDto } from '../dto/resource-response.dto';
 import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 
 @Injectable()
 export class ResourcesService {
@@ -41,7 +42,7 @@ export class ResourcesService {
 
   async getResourcePermissions(
     resourceId: number,
-  ): Promise<PermissionResponseDto[]> {
+  ): Promise<PermissionListResponseDto[]> {
     const permissionList = await this.drizzle.db
       .select()
       .from(permissions)
@@ -62,7 +63,7 @@ export class ResourcesService {
 
   private mapToPermissionResponseDto(
     permission: typeof permissions.$inferSelect,
-  ): PermissionResponseDto {
+  ): PermissionListResponseDto {
     return {
       id: permission.id,
       name: permission.name,

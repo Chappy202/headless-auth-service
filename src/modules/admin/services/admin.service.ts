@@ -18,9 +18,10 @@ import { hashPassword } from '@/common/utils/crypto.util';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission.dto';
 import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
-import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
 import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
 import { decrypt, encrypt } from '@/common/utils/encryption.util';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
+import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 
 @Injectable()
 export class AdminService {
@@ -90,17 +91,17 @@ export class AdminService {
     return userList.map(this.mapToUserResponseDto);
   }
 
-  async getUserById(id: number): Promise<UserResponseDto> {
+  async getUserById(id: number): Promise<UserProfileDto> {
     if (!Number.isInteger(id) || id <= 0) {
       throw new BadRequestException(
         'Invalid user ID. User ID must be a positive integer.',
       );
     }
-    const user = await this.userService.findByIdSecure(id);
+    const user = await this.userService.getUserProfile(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return this.mapToUserResponseDto(user);
+    return user;
   }
 
   async updateUser(
@@ -178,7 +179,9 @@ export class AdminService {
     await this.permissionsService.assignPermissionToUser(permissionId, userId);
   }
 
-  async getUserPermissions(userId: number): Promise<PermissionResponseDto[]> {
+  async getUserPermissions(
+    userId: number,
+  ): Promise<PermissionListResponseDto[]> {
     return this.permissionsService.getUserPermissions(userId);
   }
 
@@ -194,11 +197,11 @@ export class AdminService {
 
   async createPermission(
     createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionResponseDto> {
+  ): Promise<PermissionListResponseDto> {
     return this.permissionsService.createPermission(createPermissionDto);
   }
 
-  async getPermissions(): Promise<PermissionResponseDto[]> {
+  async getPermissions(): Promise<PermissionListResponseDto[]> {
     return this.permissionsService.getPermissions();
   }
 
