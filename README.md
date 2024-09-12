@@ -280,7 +280,87 @@ For the most up-to-date and detailed information about the API, always refer to 
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions to the Headless Auth Service! This section will guide you through the process of contributing to our project.
+
+### Getting Started
+
+1. Fork the repository on GitHub.
+2. Clone your forked repository to your local machine.
+3. Install dependencies with `yarn install`.
+4. Create a new branch for your feature or bug fix.
+
+### Development Workflow
+
+1. Make your changes in your feature branch.
+2. Follow the coding standards and best practices outlined in this document.
+3. Write or update tests as necessary.
+4. Run tests with `yarn test` to ensure all tests pass.
+5. Run the linter with `yarn lint` to check for any style issues.
+
+### Commit Messages
+
+We use conventional commits to standardize our commit messages. This helps us generate meaningful changelogs and version numbers. Please format your commit messages as follows:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+<footer>
+```
+
+Types include:
+
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation only changes
+- style: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+- refactor: A code change that neither fixes a bug nor adds a feature
+- perf: A code change that improves performance
+- test: Adding missing tests or correcting existing tests
+- build: Changes that affect the build system or external dependencies
+- ci: Changes to our CI configuration files and scripts
+
+Example:
+
+```
+feat(auth): add support for API key authentication
+
+This commit adds a new authentication method using API keys.
+
+Closes #123
+```
+
+### Pull Requests
+
+1. Update your feature branch with the latest changes from the main branch.
+2. Push your branch to your fork on GitHub.
+3. Open a pull request against the main repository.
+4. Ensure the PR description clearly describes the problem and solution. Include the relevant issue number if applicable.
+5. Request a review from one of the project maintainers.
+
+### Code Style
+
+- We use ESLint to enforce code style. Run `yarn lint` before committing.
+- Write clear, readable, and well-documented code.
+- Follow the principle of single responsibility for functions and classes.
+- Use meaningful variable and function names.
+
+### Testing
+
+- Write unit tests for new features and bug fixes.
+- Ensure all tests pass before submitting a pull request.
+- Aim for high test coverage, especially for critical components.
+
+### Documentation
+
+- Update the README.md file if you're adding or changing functionality.
+- Add JSDoc comments to functions and classes.
+- Update API documentation if you're modifying endpoints.
+
+### Versioning
+
+We use Semantic Versioning (SemVer) for version numbers. The version will be automatically bumped based on your commit messages when a new release is created.
+Thank you for contributing to the Headless Auth Service! Your efforts help make this project better for everyone.
 
 ## License
 
