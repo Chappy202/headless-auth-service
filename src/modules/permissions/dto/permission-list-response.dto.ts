@@ -1,7 +1,6 @@
-import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class PermissionResponseDto {
+export class PermissionListResponseDto {
   @ApiProperty({
     example: 1,
     description: 'The unique identifier of the permission',
@@ -21,8 +20,8 @@ export class PermissionResponseDto {
   type: 'admin' | 'read' | 'write' | '*';
 
   @ApiProperty({
-    type: ResourceResponseDto,
-    description: 'The resource associated with this permission',
+    example: 1,
+    description: 'The ID of the resource this permission is for',
   })
-  resource: ResourceResponseDto;
+  resourceId: number | null;
 }

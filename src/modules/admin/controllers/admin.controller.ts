@@ -34,6 +34,11 @@ import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission
 import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
 import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
 import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
+import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
+import { CreateRoleDto } from '@/modules/roles/dto/create-role.dto';
+import { RoleResponseDto } from '@/modules/roles/dto/role-response.dto';
+import { UpdateRoleDto } from '@/modules/roles/dto/update-role.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -131,7 +136,7 @@ export class AdminController {
   @ApiResponse({
     status: 200,
     description: 'Returns the user details.',
-    type: UserResponseDto,
+    type: UserProfileDto,
   })
   @ApiResponse({
     status: 400,
@@ -143,7 +148,7 @@ export class AdminController {
     description: 'User not found',
     type: ErrorResponseDto,
   })
-  async getUserById(@Param('id') id: string): Promise<UserResponseDto> {
+  async getUserById(@Param('id') id: string): Promise<UserProfileDto> {
     const userId = parseInt(id, 10);
     if (isNaN(userId)) {
       throw new BadRequestException(
@@ -320,7 +325,7 @@ export class AdminController {
   })
   async getUserPermissions(
     @Param('userId') userId: string,
-  ): Promise<PermissionResponseDto[]> {
+  ): Promise<PermissionListResponseDto[]> {
     const _userId = parseInt(userId, 10);
     if (isNaN(_userId) || _userId <= 0) {
       throw new BadRequestException(
@@ -403,7 +408,7 @@ export class AdminController {
   })
   async createPermission(
     @Body() createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionResponseDto> {
+  ): Promise<PermissionListResponseDto> {
     return this.adminService.createPermission(createPermissionDto);
   }
 
@@ -424,7 +429,127 @@ export class AdminController {
       example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     },
   })
-  async getPermissions(): Promise<PermissionResponseDto[]> {
+  async getPermissions(): Promise<PermissionListResponseDto[]> {
     return this.adminService.getPermissions();
+  }
+
+  @Post('roles')
+  @RequirePermission('write:roles')
+  @ApiOperation({ summary: 'Create a new role' })
+  @ApiResponse({
+    status: 201,
+    description: 'The role has been successfully created.',
+    type: RoleResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
+  async createRole(
+    @Body() createRoleDto: CreateRoleDto,
+  ): Promise<RoleResponseDto> {
+    return this.adminService.createRole(createRoleDto);
+  }
+
+  @Get('roles')
+  @RequirePermission('read:roles')
+  @ApiOperation({ summary: 'Get all roles' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return all roles.',
+    type: [RoleResponseDto],
+  })
+  async getRoles(): Promise<RoleResponseDto[]> {
+    return this.adminService.getRoles();
+  }
+
+  @Get('roles/:id')
+  @RequirePermission('read:roles')
+  @ApiOperation({ summary: 'Get a role by id' })
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return the role.',
+    type: RoleResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Role not found.',
+    type: ErrorResponseDto,
+  })
+  async getRole(@Param('id') id: string): Promise<RoleResponseDto> {
+    return this.adminService.getRoleById(+id);
+  }
+
+  @Put('roles/:id')
+  @RequirePermission('write:roles')
+  @ApiOperation({ summary: 'Update a role' })
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiResponse({
+    status: 200,
+    description: 'The role has been successfully updated.',
+    type: RoleResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Role not found.',
+    type: ErrorResponseDto,
+  })
+  async updateRole(
+    @Param('id') id: string,
+    @Body() updateRoleDto: UpdateRoleDto,
+  ): Promise<RoleResponseDto> {
+    return this.adminService.updateRole(+id, updateRoleDto);
+  }
+
+  @Delete('roles/:id')
+  @RequirePermission('write:roles')
+  @ApiOperation({ summary: 'Delete a role' })
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiResponse({
+    status: 200,
+    description: 'The role has been successfully deleted.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Role not found.',
+    type: ErrorResponseDto,
+  })
+  async deleteRole(@Param('id') id: string): Promise<void> {
+    return this.adminService.deleteRole(+id);
+  }
+
+  @Post('roles/:roleId/permissions/:permissionId')
+  @RequirePermission('write:roles')
+  @ApiOperation({ summary: 'Assign a permission to a role' })
+  @ApiParam({ name: 'roleId', type: 'number' })
+  @ApiParam({ name: 'permissionId', type: 'number' })
+  @ApiResponse({
+    status: 200,
+    description: 'The permission has been assigned to the role.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Role or permission not found.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Permission is already assigned to this role.',
+    type: ErrorResponseDto,
+  })
+  async assignPermissionToRole(
+    @Param('roleId') roleId: string,
+    @Param('permissionId') permissionId: string,
+  ): Promise<void> {
+    try {
+      await this.adminService.assignPermissionToRole(+roleId, +permissionId);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
   }
 }

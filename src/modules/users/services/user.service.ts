@@ -1,15 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
-import { users } from '@/infrastructure/database/schema';
+import { roles, userRoles, users } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
 import { hashPassword } from '@/common/utils/crypto.util';
 import { encrypt, decrypt } from '@/common/utils/encryption.util';
+import { PermissionsService } from '@/modules/permissions/services/permissions.service';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 
 @Injectable()
 export class UserService {
-  constructor(private drizzle: DrizzleService) {}
+  constructor(
+    private drizzle: DrizzleService,
+    private permissionsService: PermissionsService,
+  ) {}
 
   async findByUsername(
     username: string,
@@ -83,7 +88,10 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return this.mapToUserProfileDto(user);
+    const userRolesData = await this.getUserRoles(id);
+    const permissions = await this.permissionsService.getUserPermissions(id);
+
+    return this.mapToUserProfileDto(user, userRolesData, permissions);
   }
 
   async updateProfile(
@@ -112,7 +120,21 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return this.mapToUserProfileDto(updatedUser);
+    const userRolesData = await this.getUserRoles(id);
+    const permissions = await this.permissionsService.getUserPermissions(id);
+
+    return this.mapToUserProfileDto(updatedUser, userRolesData, permissions);
+  }
+
+  private async getUserRoles(userId: number) {
+    return this.drizzle.db
+      .select({
+        id: roles.id,
+        name: roles.name,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, userId));
   }
 
   async create(
@@ -137,6 +159,8 @@ export class UserService {
 
   private mapToUserProfileDto(
     user: Partial<typeof users.$inferSelect>,
+    userRoles: { id: number; name: string }[],
+    permissions: PermissionListResponseDto[],
   ): UserProfileDto {
     return {
       id: user.id!,
@@ -145,6 +169,8 @@ export class UserService {
       isEmailVerified: user.isEmailVerified!,
       createdAt: user.createdAt!,
       mfaEnabled: user.mfaEnabled!,
+      roles: userRoles,
+      permissions: permissions,
     };
   }
 }

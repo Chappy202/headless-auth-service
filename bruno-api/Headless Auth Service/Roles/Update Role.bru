@@ -1,17 +1,17 @@
 meta {
-  name: Update User
+  name: Update Role
   type: http
   seq: 4
 }
 
 put {
-  url: {{url}}/{{version}}/admin/users/:userId
+  url: {{url}}/{{version}}/roles/:roleId
   body: json
   auth: bearer
 }
 
 params:path {
-  userId: {{userId}}
+  roleId: 5
 }
 
 headers {
@@ -23,8 +23,5 @@ auth:bearer {
 }
 
 body:json {
-  {
-    "username": "updatedusername",
-    "email": "updated@example.com"
-  }
+  { "name": "senior_manager" }
 }

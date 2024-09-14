@@ -7,10 +7,12 @@ import {
   userRoles,
   roles,
   users,
+  resources,
 } from '@/infrastructure/database/schema';
 import { and, eq } from 'drizzle-orm';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
 import { PermissionResponseDto } from '../dto/permission-response.dto';
+import { PermissionListResponseDto } from '../dto/permission-list-response.dto';
 
 @Injectable()
 export class PermissionsService {
@@ -18,31 +20,35 @@ export class PermissionsService {
 
   async createPermission(
     createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionResponseDto> {
+  ): Promise<PermissionListResponseDto> {
     const [permission] = await this.drizzle.db
       .insert(permissions)
       .values(createPermissionDto)
       .returning();
-    return this.mapToPermissionResponseDto(permission);
+    return this.mapToPermissionListResponseDto(permission);
   }
 
-  async getPermissions(): Promise<PermissionResponseDto[]> {
+  async getPermissions(): Promise<PermissionListResponseDto[]> {
     const permissionList = await this.drizzle.db.select().from(permissions);
-    return permissionList.map(this.mapToPermissionResponseDto);
+    return permissionList.map(this.mapToPermissionListResponseDto);
   }
 
   async getPermissionById(id: number): Promise<PermissionResponseDto> {
-    const [permission] = await this.drizzle.db
-      .select()
+    const [permissionWithResource] = await this.drizzle.db
+      .select({
+        permission: permissions,
+        resource: resources,
+      })
       .from(permissions)
+      .leftJoin(resources, eq(permissions.resourceId, resources.id))
       .where(eq(permissions.id, id))
       .limit(1);
 
-    if (!permission) {
+    if (!permissionWithResource) {
       throw new NotFoundException('Permission not found');
     }
 
-    return this.mapToPermissionResponseDto(permission);
+    return this.mapToPermissionResponseDto(permissionWithResource);
   }
 
   async assignPermissionToRole(
@@ -103,22 +109,28 @@ export class PermissionsService {
     });
   }
 
-  async getUserPermissions(userId: number): Promise<PermissionResponseDto[]> {
+  async getUserPermissions(
+    userId: number,
+  ): Promise<PermissionListResponseDto[]> {
     const userPerms = await this.drizzle.db
-      .select()
+      .select({
+        permission: permissions,
+      })
       .from(userPermissions)
       .innerJoin(permissions, eq(userPermissions.permissionId, permissions.id))
       .where(eq(userPermissions.userId, userId));
 
     const rolePerms = await this.drizzle.db
-      .select()
+      .select({
+        permission: permissions,
+      })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
       .innerJoin(userRoles, eq(rolePermissions.roleId, userRoles.roleId))
       .where(eq(userRoles.userId, userId));
 
-    const allPerms = [...userPerms, ...rolePerms].map((p) => p.permissions);
-    return allPerms.map(this.mapToPermissionResponseDto);
+    const allPerms = [...userPerms, ...rolePerms].map((p) => p.permission);
+    return allPerms.map(this.mapToPermissionListResponseDto);
   }
 
   async checkPermission(
@@ -184,14 +196,32 @@ export class PermissionsService {
     return userSuperRole.length > 0;
   }
 
-  private mapToPermissionResponseDto(
+  private mapToPermissionListResponseDto(
     permission: typeof permissions.$inferSelect,
-  ): PermissionResponseDto {
+  ): PermissionListResponseDto {
     return {
       id: permission.id,
       name: permission.name,
       type: permission.type,
       resourceId: permission.resourceId,
+    };
+  }
+
+  private mapToPermissionResponseDto(permissionWithResource: {
+    permission: typeof permissions.$inferSelect;
+    resource: typeof resources.$inferSelect | null;
+  }): PermissionResponseDto {
+    return {
+      id: permissionWithResource.permission.id,
+      name: permissionWithResource.permission.name,
+      type: permissionWithResource.permission.type,
+      resource: permissionWithResource.resource
+        ? {
+            id: permissionWithResource.resource.id,
+            name: permissionWithResource.resource.name,
+            description: permissionWithResource.resource.description,
+          }
+        : null,
     };
   }
 }

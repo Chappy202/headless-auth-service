@@ -16,6 +16,7 @@ import { CreateResourceDto } from '../dto/create-resource.dto';
 import { ResourceResponseDto } from '../dto/resource-response.dto';
 import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
 import { ErrorResponseDto } from '@/common/dto/error-response.dto';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 
 @ApiTags('resources')
 @Controller('resources')
@@ -128,7 +129,7 @@ export class ResourcesController {
   @ApiProduces('application/json')
   async getPermissions(
     @Param('id') id: string,
-  ): Promise<PermissionResponseDto[]> {
+  ): Promise<PermissionListResponseDto[]> {
     return this.resourcesService.getResourcePermissions(+id);
   }
 }

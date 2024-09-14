@@ -1,3 +1,5 @@
+// src/modules/permissions/controllers/permissions.controller.ts
+
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
@@ -5,15 +7,17 @@ import {
   ApiOperation,
   ApiResponse,
   ApiHeader,
+  ApiParam,
   ApiConsumes,
   ApiProduces,
 } from '@nestjs/swagger';
 import { PermissionGuard } from '@/common/guards/permission.guard';
 import { RequirePermission } from '@/common/decorators/permission.decorator';
 import { PermissionsService } from '../services/permissions.service';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
 import { PermissionResponseDto } from '../dto/permission-response.dto';
+import { PermissionListResponseDto } from '../dto/permission-list-response.dto';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { ErrorResponseDto } from '@/common/dto/error-response.dto';
 
 @ApiTags('permissions')
@@ -29,7 +33,7 @@ export class PermissionsController {
   @ApiResponse({
     status: 201,
     description: 'The permission has been successfully created.',
-    type: PermissionResponseDto,
+    type: PermissionListResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -47,9 +51,9 @@ export class PermissionsController {
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
-  async create(
+  async createPermission(
     @Body() createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionResponseDto> {
+  ): Promise<PermissionListResponseDto> {
     return this.permissionsService.createPermission(createPermissionDto);
   }
 
@@ -59,7 +63,7 @@ export class PermissionsController {
   @ApiResponse({
     status: 200,
     description: 'Return all permissions.',
-    type: [PermissionResponseDto],
+    type: [PermissionListResponseDto],
   })
   @ApiHeader({
     name: 'Authorization',
@@ -71,7 +75,7 @@ export class PermissionsController {
     },
   })
   @ApiProduces('application/json')
-  async findAll(): Promise<PermissionResponseDto[]> {
+  async getPermissions(): Promise<PermissionListResponseDto[]> {
     return this.permissionsService.getPermissions();
   }
 

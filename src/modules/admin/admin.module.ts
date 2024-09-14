@@ -5,9 +5,16 @@ import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
 import { UserModule } from '@/modules/users/user.module';
 import { PermissionsModule } from '@/modules/permissions/permissions.module';
 import { ResourcesModule } from '@/modules/resources/resources.module';
+import { RolesModule } from '../roles/roles.module';
 
 @Module({
-  imports: [DrizzleModule, UserModule, PermissionsModule, ResourcesModule],
+  imports: [
+    DrizzleModule,
+    UserModule,
+    PermissionsModule,
+    ResourcesModule,
+    RolesModule,
+  ],
   controllers: [AdminController],
   providers: [AdminService],
 })
