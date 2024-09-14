@@ -22,6 +22,10 @@ import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.d
 import { decrypt, encrypt } from '@/common/utils/encryption.util';
 import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
+import { RolesService } from '@/modules/roles/services/roles.service';
+import { CreateRoleDto } from '@/modules/roles/dto/create-role.dto';
+import { RoleResponseDto } from '@/modules/roles/dto/role-response.dto';
+import { UpdateRoleDto } from '@/modules/roles/dto/update-role.dto';
 
 @Injectable()
 export class AdminService {
@@ -30,6 +34,7 @@ export class AdminService {
     private userService: UserService,
     private permissionsService: PermissionsService,
     private resourcesService: ResourcesService,
+    private rolesService: RolesService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -203,6 +208,29 @@ export class AdminService {
 
   async getPermissions(): Promise<PermissionListResponseDto[]> {
     return this.permissionsService.getPermissions();
+  }
+
+  async createRole(createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
+    return this.rolesService.createRole(createRoleDto);
+  }
+
+  async getRoles(): Promise<RoleResponseDto[]> {
+    return this.rolesService.getRoles();
+  }
+
+  async getRoleById(id: number): Promise<RoleResponseDto> {
+    return this.rolesService.getRoleById(id);
+  }
+
+  async updateRole(
+    id: number,
+    updateRoleDto: UpdateRoleDto,
+  ): Promise<RoleResponseDto> {
+    return this.rolesService.updateRole(id, updateRoleDto);
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    return this.rolesService.deleteRole(id);
   }
 
   private mapToUserResponseDto(

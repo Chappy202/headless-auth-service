@@ -1,0 +1,27 @@
+meta {
+  name: Update Role
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{url}}/{{version}}/admin/roles/:roleId
+  body: json
+  auth: bearer
+}
+
+params:path {
+  roleId: 4
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "senior_editor" }
+}

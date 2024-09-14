@@ -1,0 +1,19 @@
+meta {
+  name: Delete Role
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{url}}/{{version}}/admin/roles/:roleId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  roleId: 4
+}
+
+auth:bearer {
+  token: {{token}}
+}

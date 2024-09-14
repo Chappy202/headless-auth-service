@@ -1,0 +1,23 @@
+meta {
+  name: Create Role
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/{{version}}/admin/roles
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  { "name": "editor" }
+}
