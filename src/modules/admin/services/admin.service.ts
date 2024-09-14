@@ -233,6 +233,13 @@ export class AdminService {
     return this.rolesService.deleteRole(id);
   }
 
+  async assignPermissionToRole(
+    roleId: number,
+    permissionId: number,
+  ): Promise<void> {
+    return this.rolesService.assignPermissionToRole(roleId, permissionId);
+  }
+
   private mapToUserResponseDto(
     user: Omit<typeof users.$inferSelect, 'password'>,
   ): UserResponseDto {

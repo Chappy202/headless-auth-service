@@ -4,11 +4,17 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
-import { roles, rolePermissions } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
+import {
+  roles,
+  rolePermissions,
+  permissions,
+} from '@/infrastructure/database/schema';
+import { and, eq } from 'drizzle-orm';
 import { CreateRoleDto } from '../dto/create-role.dto';
 import { UpdateRoleDto } from '../dto/update-role.dto';
 import { RoleResponseDto } from '../dto/role-response.dto';
+import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
+import { RolesResponseDto } from '../dto/roles-response.dto';
 
 @Injectable()
 export class RolesService {
@@ -35,7 +41,7 @@ export class RolesService {
     return roleList.map(this.mapToRoleResponseDto);
   }
 
-  async getRoleById(id: number): Promise<RoleResponseDto> {
+  async getRoleById(id: number): Promise<RolesResponseDto> {
     const [role] = await this.drizzle.db
       .select()
       .from(roles)
@@ -46,7 +52,22 @@ export class RolesService {
       throw new NotFoundException('Role not found');
     }
 
-    return this.mapToRoleResponseDto(role);
+    const rolePermissionsList = await this.drizzle.db
+      .select({
+        permission: permissions,
+      })
+      .from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, id));
+
+    const permissionsList = rolePermissionsList.map((rp) =>
+      this.mapToPermissionListResponseDto(rp.permission),
+    );
+
+    return {
+      ...this.mapToRoleResponseDto(role),
+      permissions: permissionsList,
+    };
   }
 
   async updateRole(
@@ -83,12 +104,70 @@ export class RolesService {
     });
   }
 
+  async assignPermissionToRole(
+    roleId: number,
+    permissionId: number,
+  ): Promise<void> {
+    await this.drizzle.db.transaction(async (tx) => {
+      const [existingRole] = await tx
+        .select()
+        .from(roles)
+        .where(eq(roles.id, roleId))
+        .limit(1);
+
+      if (!existingRole) {
+        throw new NotFoundException('Role not found');
+      }
+
+      const [existingPermission] = await tx
+        .select()
+        .from(permissions)
+        .where(eq(permissions.id, permissionId))
+        .limit(1);
+
+      if (!existingPermission) {
+        throw new NotFoundException('Permission not found');
+      }
+
+      // Check if the permission is already assigned to the role
+      const [existingAssignment] = await tx
+        .select()
+        .from(rolePermissions)
+        .where(
+          and(
+            eq(rolePermissions.roleId, roleId),
+            eq(rolePermissions.permissionId, permissionId),
+          ),
+        )
+        .limit(1);
+
+      if (existingAssignment) {
+        throw new ConflictException(
+          'Permission is already assigned to this role',
+        );
+      }
+
+      await tx.insert(rolePermissions).values({ roleId, permissionId });
+    });
+  }
+
   private mapToRoleResponseDto(
     role: typeof roles.$inferSelect,
   ): RoleResponseDto {
     return {
       id: role.id,
       name: role.name,
+    };
+  }
+
+  private mapToPermissionListResponseDto(
+    permission: typeof permissions.$inferSelect,
+  ): PermissionListResponseDto {
+    return {
+      id: permission.id,
+      name: permission.name,
+      type: permission.type,
+      resourceId: permission.resourceId,
     };
   }
 }

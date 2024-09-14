@@ -519,4 +519,37 @@ export class AdminController {
   async deleteRole(@Param('id') id: string): Promise<void> {
     return this.adminService.deleteRole(+id);
   }
+
+  @Post('roles/:roleId/permissions/:permissionId')
+  @RequirePermission('write:roles')
+  @ApiOperation({ summary: 'Assign a permission to a role' })
+  @ApiParam({ name: 'roleId', type: 'number' })
+  @ApiParam({ name: 'permissionId', type: 'number' })
+  @ApiResponse({
+    status: 200,
+    description: 'The permission has been assigned to the role.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Role or permission not found.',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Permission is already assigned to this role.',
+    type: ErrorResponseDto,
+  })
+  async assignPermissionToRole(
+    @Param('roleId') roleId: string,
+    @Param('permissionId') permissionId: string,
+  ): Promise<void> {
+    try {
+      await this.adminService.assignPermissionToRole(+roleId, +permissionId);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw new ConflictException(error.message);
+      }
+      throw error;
+    }
+  }
 }
