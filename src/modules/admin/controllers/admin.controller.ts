@@ -30,8 +30,6 @@ import { UserResponseDto } from '../dto/user-response.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { ErrorResponseDto } from '@/common/dto/error-response.dto';
-import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
-import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 import { CreateRoleDto } from '@/modules/roles/dto/create-role.dto';
 import { RoleResponseDto } from '@/modules/roles/dto/role-response.dto';
@@ -241,86 +239,6 @@ export class AdminController {
       );
     }
     return this.adminService.deleteUser(userId);
-  }
-
-  @Post('users/:userId/permissions/:permissionId')
-  @RequirePermission('write:permissions')
-  @ApiOperation({ summary: 'Assign a permission to a user' })
-  @ApiResponse({
-    status: 200,
-    description: 'The permission has been assigned to the user.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid user ID',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid permission ID',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User or permission not found',
-    type: ErrorResponseDto,
-  })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
-  @Post('resources')
-  @RequirePermission('write:resources')
-  @ApiOperation({ summary: 'Create a new resource' })
-  @ApiResponse({
-    status: 201,
-    description: 'The resource has been successfully created.',
-    type: ResourceResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request',
-    type: ErrorResponseDto,
-  })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
-  async createResource(
-    @Body() createResourceDto: CreateResourceDto,
-  ): Promise<ResourceResponseDto> {
-    return this.adminService.createResource(createResourceDto);
-  }
-
-  @Get('resources')
-  @RequirePermission('read:resources')
-  @ApiOperation({ summary: 'Get all resources' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return all resources.',
-    type: [ResourceResponseDto],
-  })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
-  async getResources(): Promise<ResourceResponseDto[]> {
-    return this.adminService.getResources();
   }
 
   @Post('roles')

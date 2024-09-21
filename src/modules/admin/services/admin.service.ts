@@ -12,11 +12,8 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { UserService } from '@/modules/users/services/user.service';
-import { ResourcesService } from '@/modules/resources/services/resources.service';
 import { hashPassword } from '@/common/utils/crypto.util';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
-import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
 import { decrypt, encrypt } from '@/common/utils/encryption.util';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 import { RolesService } from '@/modules/roles/services/roles.service';
@@ -29,7 +26,6 @@ export class AdminService {
   constructor(
     private drizzle: DrizzleService,
     private userService: UserService,
-    private resourcesService: ResourcesService,
     private rolesService: RolesService,
   ) {}
 
@@ -171,16 +167,6 @@ export class AdminService {
         'An error occurred while deleting the user',
       );
     }
-  }
-
-  async createResource(
-    createResourceDto: CreateResourceDto,
-  ): Promise<ResourceResponseDto> {
-    return this.resourcesService.createResource(createResourceDto);
-  }
-
-  async getResources(): Promise<ResourceResponseDto[]> {
-    return this.resourcesService.getResources();
   }
 
   async createRole(createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {

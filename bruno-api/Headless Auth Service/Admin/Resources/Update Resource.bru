@@ -1,13 +1,17 @@
 meta {
-  name: Create Resource
+  name: Update Resource
   type: http
-  seq: 1
+  seq: 4
 }
 
-post {
-  url: {{url}}/{{version}}/admin/resources
+put {
+  url: {{url}}/{{version}}/admin/resources/:resourceId
   body: json
   auth: bearer
+}
+
+params:path {
+  resourceId: 3
 }
 
 headers {
@@ -20,7 +24,7 @@ auth:bearer {
 
 body:json {
   {
-    "name": "Articles",
+    "name": "articles",
     "description": "Anything and everything articles"
   }
 }
