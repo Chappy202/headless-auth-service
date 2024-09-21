@@ -1,0 +1,19 @@
+meta {
+  name: Delete Permission
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{url}}/{{version}}/admin/permissions/:permissionId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  permissionId: 5
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -13,7 +13,6 @@ import { and, eq } from 'drizzle-orm';
 import { CreateRoleDto } from '../dto/create-role.dto';
 import { UpdateRoleDto } from '../dto/update-role.dto';
 import { RoleResponseDto } from '../dto/role-response.dto';
-import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 import { RolesResponseDto } from '../dto/roles-response.dto';
 
 @Injectable()
@@ -52,21 +51,8 @@ export class RolesService {
       throw new NotFoundException('Role not found');
     }
 
-    const rolePermissionsList = await this.drizzle.db
-      .select({
-        permission: permissions,
-      })
-      .from(rolePermissions)
-      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleId, id));
-
-    const permissionsList = rolePermissionsList.map((rp) =>
-      this.mapToPermissionListResponseDto(rp.permission),
-    );
-
     return {
       ...this.mapToRoleResponseDto(role),
-      permissions: permissionsList,
     };
   }
 
@@ -157,17 +143,6 @@ export class RolesService {
     return {
       id: role.id,
       name: role.name,
-    };
-  }
-
-  private mapToPermissionListResponseDto(
-    permission: typeof permissions.$inferSelect,
-  ): PermissionListResponseDto {
-    return {
-      id: permission.id,
-      name: permission.name,
-      type: permission.type,
-      resourceId: permission.resourceId,
     };
   }
 }

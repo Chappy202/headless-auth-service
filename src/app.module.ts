@@ -9,7 +9,6 @@ import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/users/user.module';
 import { AdminModule } from './modules/admin/admin.module';
-import { PermissionsModule } from './modules/permissions/permissions.module';
 import { ResourcesModule } from './modules/resources/resources.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmailModule } from './modules/email/email.module';
@@ -39,7 +38,6 @@ import { EmailModule } from './modules/email/email.module';
     AuthModule,
     UserModule,
     AdminModule,
-    PermissionsModule,
     ResourcesModule,
     HealthModule,
     EmailModule,

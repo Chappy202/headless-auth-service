@@ -12,15 +12,12 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { UserService } from '@/modules/users/services/user.service';
-import { PermissionsService } from '@/modules/permissions/services/permissions.service';
 import { ResourcesService } from '@/modules/resources/services/resources.service';
 import { hashPassword } from '@/common/utils/crypto.util';
 import { PaginationDto } from '@/common/dto/pagination.dto';
-import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission.dto';
 import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
 import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
 import { decrypt, encrypt } from '@/common/utils/encryption.util';
-import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 import { RolesService } from '@/modules/roles/services/roles.service';
 import { CreateRoleDto } from '@/modules/roles/dto/create-role.dto';
@@ -32,7 +29,6 @@ export class AdminService {
   constructor(
     private drizzle: DrizzleService,
     private userService: UserService,
-    private permissionsService: PermissionsService,
     private resourcesService: ResourcesService,
     private rolesService: RolesService,
   ) {}
@@ -177,19 +173,6 @@ export class AdminService {
     }
   }
 
-  async assignPermissionToUser(
-    userId: number,
-    permissionId: number,
-  ): Promise<void> {
-    await this.permissionsService.assignPermissionToUser(permissionId, userId);
-  }
-
-  async getUserPermissions(
-    userId: number,
-  ): Promise<PermissionListResponseDto[]> {
-    return this.permissionsService.getUserPermissions(userId);
-  }
-
   async createResource(
     createResourceDto: CreateResourceDto,
   ): Promise<ResourceResponseDto> {
@@ -198,16 +181,6 @@ export class AdminService {
 
   async getResources(): Promise<ResourceResponseDto[]> {
     return this.resourcesService.getResources();
-  }
-
-  async createPermission(
-    createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionListResponseDto> {
-    return this.permissionsService.createPermission(createPermissionDto);
-  }
-
-  async getPermissions(): Promise<PermissionListResponseDto[]> {
-    return this.permissionsService.getPermissions();
   }
 
   async createRole(createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {

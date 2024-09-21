@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{url}}/{{version}}/permissions/:permissionId
+  url: {{url}}/{{version}}/admin/permissions/:permissionId
   body: none
   auth: bearer
 }
 
 params:path {
-  permissionId: {{permissionId}}
+  permissionId: 2
 }
 
 auth:bearer {

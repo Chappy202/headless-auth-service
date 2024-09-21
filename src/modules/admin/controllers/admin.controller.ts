@@ -30,11 +30,8 @@ import { UserResponseDto } from '../dto/user-response.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { ErrorResponseDto } from '@/common/dto/error-response.dto';
-import { CreatePermissionDto } from '@/modules/permissions/dto/create-permission.dto';
-import { PermissionResponseDto } from '@/modules/permissions/dto/permission-response.dto';
 import { CreateResourceDto } from '@/modules/resources/dto/create-resource.dto';
 import { ResourceResponseDto } from '@/modules/resources/dto/resource-response.dto';
-import { PermissionListResponseDto } from '@/modules/permissions/dto/permission-list-response.dto';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 import { CreateRoleDto } from '@/modules/roles/dto/create-role.dto';
 import { RoleResponseDto } from '@/modules/roles/dto/role-response.dto';
@@ -277,64 +274,6 @@ export class AdminController {
       example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     },
   })
-  async assignPermissionToUser(
-    @Param('userId') userId: string,
-    @Param('permissionId') permissionId: string,
-  ): Promise<void> {
-    const _userId = parseInt(userId, 10);
-    if (isNaN(_userId)) {
-      throw new BadRequestException(
-        'Invalid user ID. User ID must be a positive integer.',
-      );
-    }
-    const _permissionId = parseInt(permissionId, 10);
-    if (isNaN(_permissionId)) {
-      throw new BadRequestException(
-        'Invalid permission ID. Permission ID must be a positive integer.',
-      );
-    }
-    return this.adminService.assignPermissionToUser(+_userId, +_permissionId);
-  }
-
-  @Get('users/:userId/permissions')
-  @RequirePermission('read:permissions')
-  @ApiOperation({ summary: 'Get user permissions' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return the user permissions.',
-    type: [PermissionResponseDto],
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid user ID',
-    type: ErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found',
-    type: ErrorResponseDto,
-  })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
-  async getUserPermissions(
-    @Param('userId') userId: string,
-  ): Promise<PermissionListResponseDto[]> {
-    const _userId = parseInt(userId, 10);
-    if (isNaN(_userId) || _userId <= 0) {
-      throw new BadRequestException(
-        'Invalid user ID. User ID must be a positive integer.',
-      );
-    }
-    return this.adminService.getUserPermissions(+_userId);
-  }
-
   @Post('resources')
   @RequirePermission('write:resources')
   @ApiOperation({ summary: 'Create a new resource' })
@@ -382,55 +321,6 @@ export class AdminController {
   })
   async getResources(): Promise<ResourceResponseDto[]> {
     return this.adminService.getResources();
-  }
-
-  @Post('permissions')
-  @RequirePermission('write:permissions')
-  @ApiOperation({ summary: 'Create a new permission' })
-  @ApiResponse({
-    status: 201,
-    description: 'The permission has been successfully created.',
-    type: PermissionResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request',
-    type: ErrorResponseDto,
-  })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
-  async createPermission(
-    @Body() createPermissionDto: CreatePermissionDto,
-  ): Promise<PermissionListResponseDto> {
-    return this.adminService.createPermission(createPermissionDto);
-  }
-
-  @Get('permissions')
-  @RequirePermission('read:permissions')
-  @ApiOperation({ summary: 'Get all permissions' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return all permissions.',
-    type: [PermissionResponseDto],
-  })
-  @ApiHeader({
-    name: 'Authorization',
-    description: 'JWT token',
-    required: true,
-    schema: {
-      type: 'string',
-      example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    },
-  })
-  async getPermissions(): Promise<PermissionListResponseDto[]> {
-    return this.adminService.getPermissions();
   }
 
   @Post('roles')
