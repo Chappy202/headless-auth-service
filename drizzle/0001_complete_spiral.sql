@@ -1,0 +1,1 @@
+DROP TABLE "auth"."blacklisted_tokens";

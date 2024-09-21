@@ -8,6 +8,13 @@
       "when": 1721051095749,
       "tag": "0000_fearless_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1726914850505,
+      "tag": "0001_complete_spiral",
+      "breakpoints": true
     }
   ]
 }
