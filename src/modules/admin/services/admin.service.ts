@@ -16,17 +16,12 @@ import { hashPassword } from '@/common/utils/crypto.util';
 import { PaginationDto } from '@/common/dto/pagination.dto';
 import { decrypt, encrypt } from '@/common/utils/encryption.util';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
-import { RolesService } from '@/modules/roles/services/roles.service';
-import { CreateRoleDto } from '@/modules/roles/dto/create-role.dto';
-import { RoleResponseDto } from '@/modules/roles/dto/role-response.dto';
-import { UpdateRoleDto } from '@/modules/roles/dto/update-role.dto';
 
 @Injectable()
 export class AdminService {
   constructor(
     private drizzle: DrizzleService,
     private userService: UserService,
-    private rolesService: RolesService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -167,36 +162,6 @@ export class AdminService {
         'An error occurred while deleting the user',
       );
     }
-  }
-
-  async createRole(createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
-    return this.rolesService.createRole(createRoleDto);
-  }
-
-  async getRoles(): Promise<RoleResponseDto[]> {
-    return this.rolesService.getRoles();
-  }
-
-  async getRoleById(id: number): Promise<RoleResponseDto> {
-    return this.rolesService.getRoleById(id);
-  }
-
-  async updateRole(
-    id: number,
-    updateRoleDto: UpdateRoleDto,
-  ): Promise<RoleResponseDto> {
-    return this.rolesService.updateRole(id, updateRoleDto);
-  }
-
-  async deleteRole(id: number): Promise<void> {
-    return this.rolesService.deleteRole(id);
-  }
-
-  async assignPermissionToRole(
-    roleId: number,
-    permissionId: number,
-  ): Promise<void> {
-    return this.rolesService.assignPermissionToRole(roleId, permissionId);
   }
 
   private mapToUserResponseDto(

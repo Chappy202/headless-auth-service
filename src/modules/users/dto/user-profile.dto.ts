@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { RoleDto } from '@/modules/roles/dto/role.dto';
 
 export class UserProfileDto {
   @ApiProperty({ example: 1, description: 'The unique identifier of the user' })
@@ -29,10 +28,4 @@ export class UserProfileDto {
     description: 'Whether Multi-Factor Authentication is enabled for the user',
   })
   mfaEnabled: boolean;
-
-  @ApiProperty({
-    type: [RoleDto],
-    description: 'The roles assigned to the user',
-  })
-  roles: RoleDto[];
 }
