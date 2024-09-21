@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { apiKeys } from '@/infrastructure/database/schema';
-import { eq, isNull, lte, or, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import {
+  CreateApiKeyDto,
+  ApiKeyResponseDto,
+} from '../dto/api-key-management.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { CreateApiKeyDto } from '../dto/create-api-key.dto';
-import { ApiKeyResponseDto } from '../dto/api-key-response.dto';
 
 @Injectable()
-export class ApiKeyService {
+export class ApiKeyManagementService {
   constructor(private drizzle: DrizzleService) {}
 
   async createApiKey(
@@ -27,44 +29,22 @@ export class ApiKeyService {
     return this.mapToApiKeyResponseDto(newApiKey);
   }
 
-  async validateApiKey(key: string): Promise<boolean> {
-    const [apiKey] = await this.drizzle.db
-      .select()
-      .from(apiKeys)
-      .where(
-        and(
-          eq(apiKeys.key, key),
-          or(isNull(apiKeys.expiresAt), lte(apiKeys.expiresAt, new Date())),
-        ),
-      )
-      .limit(1);
-
-    if (apiKey) {
-      await this.drizzle.db
-        .update(apiKeys)
-        .set({ lastUsedAt: new Date() })
-        .where(eq(apiKeys.id, apiKey.id));
-      return true;
-    }
-    return false;
-  }
-
-  async listApiKeys(): Promise<ApiKeyResponseDto[]> {
+  async getAllApiKeys(): Promise<ApiKeyResponseDto[]> {
     const apiKeyList = await this.drizzle.db.select().from(apiKeys);
     return apiKeyList.map(this.mapToApiKeyResponseDto);
   }
 
-  async revokeApiKey(id: number): Promise<ApiKeyResponseDto> {
-    const [revokedKey] = await this.drizzle.db
+  async deleteApiKey(id: number): Promise<ApiKeyResponseDto> {
+    const [deletedApiKey] = await this.drizzle.db
       .delete(apiKeys)
       .where(eq(apiKeys.id, id))
       .returning();
 
-    if (!revokedKey) {
+    if (!deletedApiKey) {
       throw new NotFoundException('API key not found');
     }
 
-    return this.mapToApiKeyResponseDto(revokedKey);
+    return this.mapToApiKeyResponseDto(deletedApiKey);
   }
 
   private mapToApiKeyResponseDto(

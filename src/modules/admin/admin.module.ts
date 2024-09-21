@@ -6,6 +6,8 @@ import { UserModule } from '@/modules/users/user.module';
 import { PermissionsModule } from '@/modules/permissions/permissions.module';
 import { ResourcesModule } from '@/modules/resources/resources.module';
 import { RolesModule } from '../roles/roles.module';
+import { ApiKeyManagementController } from './controllers/api-key-management.controller';
+import { ApiKeyManagementService } from './services/api-key-management.service';
 
 @Module({
   imports: [
@@ -15,7 +17,7 @@ import { RolesModule } from '../roles/roles.module';
     ResourcesModule,
     RolesModule,
   ],
-  controllers: [AdminController],
-  providers: [AdminService],
+  controllers: [AdminController, ApiKeyManagementController],
+  providers: [AdminService, ApiKeyManagementService],
 })
 export class AdminModule {}
