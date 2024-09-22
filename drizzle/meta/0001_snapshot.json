@@ -1,5 +1,5 @@
 {
-  "id": "890405a9-4d0f-47d5-a3cc-671beca0d116",
+  "id": "a645f77d-54e0-47b8-b26d-ecb747b901b4",
   "prevId": "fba528b3-1fed-4b43-9c5d-068f429d80ca",
   "version": "7",
   "dialect": "postgresql",
@@ -202,7 +202,23 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "resource_name_idx": {
+          "name": "resource_name_idx",
+          "columns": [
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -551,6 +567,13 @@
           "type": "varchar(32)",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_disabled": {
+          "name": "is_disabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},

@@ -1,13 +1,15 @@
-import { Injectable } from '@nestjs/common';
+// src/modules/auth/services/authorization.service.ts
+
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import {
-  permissions,
-  userPermissions,
-  rolePermissions,
-  userRoles,
   roles,
+  permissions,
+  userRoles,
+  rolePermissions,
+  userPermissions,
 } from '@/infrastructure/database/schema';
-import { eq, and } from 'drizzle-orm';
+import { Injectable } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class AuthorizationService {
@@ -17,28 +19,19 @@ export class AuthorizationService {
     userId: number,
     requiredPermission: string,
   ): Promise<boolean> {
-    // Check for super role first
-    const hasSuperRole = await this.userHasSuperRole(userId);
-    if (hasSuperRole) {
+    // Check for super role or global wildcard permission first
+    const isSuperUser = await this.isUserSuper(userId);
+    if (isSuperUser) {
       return true;
     }
 
     const userPermissions = await this.getUserPermissions(userId);
 
-    // Check for global wildcard permission
-    if (userPermissions.some((p) => p.name === '*:*')) {
-      return true;
-    }
-
     const [requiredType, requiredResource] = requiredPermission.split(':');
 
     return userPermissions.some((p) => {
-      if (p.name === requiredPermission) {
-        return true;
-      }
-      if (p.name === `*:${requiredResource}`) {
-        return true;
-      }
+      if (p.name === requiredPermission) return true;
+      if (p.name === `*:${requiredResource}`) return true;
       const [permType, permResource] = p.name.split(':');
       if (permResource === requiredResource) {
         if (
@@ -55,27 +48,22 @@ export class AuthorizationService {
     });
   }
 
-  private async userHasSuperRole(userId: number): Promise<boolean> {
-    const superRole = await this.drizzle.db
-      .select()
-      .from(roles)
-      .where(eq(roles.name, 'super'))
-      .limit(1);
-
-    if (!superRole.length) return false;
-
-    const userSuperRole = await this.drizzle.db
-      .select()
+  private async isUserSuper(userId: number): Promise<boolean> {
+    const userRolesWithPermissions = await this.drizzle.db
+      .select({
+        roleName: roles.name,
+        permissionName: permissions.name,
+      })
       .from(userRoles)
-      .where(
-        and(
-          eq(userRoles.userId, userId),
-          eq(userRoles.roleId, superRole[0].id),
-        ),
-      )
-      .limit(1);
+      .innerJoin(roles, eq(roles.id, userRoles.roleId))
+      .innerJoin(rolePermissions, eq(rolePermissions.roleId, roles.id))
+      .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+      .where(eq(userRoles.userId, userId));
 
-    return userSuperRole.length > 0;
+    const isSuperUser = userRolesWithPermissions.some(
+      (rp) => rp.roleName === 'super' || rp.permissionName === '*:*',
+    );
+    return isSuperUser;
   }
 
   private async getUserPermissions(

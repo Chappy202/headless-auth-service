@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS "resource_name_idx" ON "auth"."resources" USING btree ("name");

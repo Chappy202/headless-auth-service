@@ -11,7 +11,7 @@ put {
 }
 
 params:path {
-  userId: {{userId}}
+  userId: 2
 }
 
 headers {
@@ -24,7 +24,16 @@ auth:bearer {
 
 body:json {
   {
-    "username": "updatedusername",
-    "email": "updated@example.com"
+    "username": "updateduser",
+    "email": "updated@example.com",
+    "mfaEnabled": false,
+    "isDisabled": false,
+    "roleIds": [
+      2
+    ],
+    "permissionIds": [
+      4,
+      5
+    ]
   }
 }

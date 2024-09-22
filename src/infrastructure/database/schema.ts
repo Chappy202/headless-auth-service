@@ -28,6 +28,7 @@ export const users = authSchema.table('users', {
   createdAt: timestamp('created_at').defaultNow(),
   mfaEnabled: boolean('mfa_enabled').notNull().default(false),
   mfaSecret: varchar('mfa_secret', { length: 32 }),
+  isDisabled: boolean('is_disabled').notNull().default(false),
 });
 
 export const sessions = authSchema.table('sessions', {

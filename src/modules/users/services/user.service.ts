@@ -53,6 +53,7 @@ export class UserService {
         createdAt: users.createdAt,
         mfaEnabled: users.mfaEnabled,
         mfaSecret: users.mfaSecret,
+        isDisabled: users.isDisabled,
       })
       .from(users)
       .where(eq(users.id, id))

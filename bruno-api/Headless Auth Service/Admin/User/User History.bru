@@ -1,0 +1,19 @@
+meta {
+  name: User History
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{url}}/{{version}}/admin/users/:userId/sessions-and-login-history
+  body: none
+  auth: bearer
+}
+
+params:path {
+  userId: 1
+}
+
+auth:bearer {
+  token: {{token}}
+}

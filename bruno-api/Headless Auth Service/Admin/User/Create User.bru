@@ -1,5 +1,5 @@
 meta {
-  name: New User
+  name: Create User
   type: http
   seq: 1
 }
@@ -22,6 +22,15 @@ body:json {
   {
     "username": "newuser",
     "email": "newuser@example.com",
-    "password": "Password123!"
+    "password": "StrongPassword123!",
+    "verifyEmail": true,
+    "roleIds": [
+      1
+    ],
+    "permissionIds": [
+      1,
+      2,
+      3
+    ]
   }
 }
