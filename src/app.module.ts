@@ -11,10 +11,23 @@ import { UserModule } from './modules/users/user.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmailModule } from './modules/email/email.module';
+import { FeatureToggleService } from './common/services/feature-toggle.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      load: [
+        () => ({
+          features: {
+            registration: process.env.FEATURE_REGISTRATION === 'true',
+            emailVerification:
+              process.env.FEATURE_EMAIL_VERIFICATION === 'false',
+          },
+        }),
+      ],
+    }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -40,5 +53,7 @@ import { EmailModule } from './modules/email/email.module';
     HealthModule,
     EmailModule,
   ],
+  providers: [FeatureToggleService],
+  exports: [FeatureToggleService],
 })
 export class AppModule {}
