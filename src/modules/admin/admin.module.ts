@@ -13,6 +13,8 @@ import { RoleManagementService } from './services/role-management.service';
 import { UserManagementController } from './controllers/user-management.controller';
 import { UserManagementService } from './services/user-management.service';
 import { EmailModule } from '../email/email.module';
+import { AdminMetricsController } from './controllers/admin-metrics.controller';
+import { AdminMetricsService } from './services/admin-metrics.service';
 
 @Module({
   imports: [DrizzleModule, UserModule, AuthModule, EmailModule],
@@ -22,6 +24,7 @@ import { EmailModule } from '../email/email.module';
     ResourceManagementController,
     RoleManagementController,
     UserManagementController,
+    AdminMetricsController,
   ],
   providers: [
     ApiKeyManagementService,
@@ -29,6 +32,7 @@ import { EmailModule } from '../email/email.module';
     ResourceManagementService,
     RoleManagementService,
     UserManagementService,
+    AdminMetricsService,
   ],
 })
 export class AdminModule {}
