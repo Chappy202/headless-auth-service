@@ -1,0 +1,19 @@
+meta {
+  name: User Email Verification Request
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{url}}/{{version}}/admin/users/:userId/request-email-verification
+  body: none
+  auth: bearer
+}
+
+params:path {
+  userId: 2
+}
+
+auth:bearer {
+  token: {{token}}
+}

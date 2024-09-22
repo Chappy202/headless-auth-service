@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: {{url}}/{{version}}/admin/users?page=1&limit=10
+  url: {{url}}/{{version}}/admin/users
   body: none
   auth: bearer
 }
 
 params:query {
-  page: 1
-  limit: 10
+  ~page: 1
+  ~limit: 10
 }
 
 auth:bearer {

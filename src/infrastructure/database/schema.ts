@@ -7,6 +7,7 @@ import {
   integer,
   pgSchema,
   pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const authSchema = pgSchema('auth');
@@ -27,6 +28,7 @@ export const users = authSchema.table('users', {
   createdAt: timestamp('created_at').defaultNow(),
   mfaEnabled: boolean('mfa_enabled').notNull().default(false),
   mfaSecret: varchar('mfa_secret', { length: 32 }),
+  isDisabled: boolean('is_disabled').notNull().default(false),
 });
 
 export const sessions = authSchema.table('sessions', {
@@ -50,11 +52,20 @@ export const loginHistory = authSchema.table('login_history', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-export const resources = authSchema.table('resources', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 50 }).notNull().unique(),
-  description: text('description'),
-});
+export const resources = authSchema.table(
+  'resources',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 50 })
+      .notNull()
+      .unique()
+      .$defaultFn(() => ''), // Default empty string to avoid NULL
+    description: text('description'),
+  },
+  (table) => ({
+    nameIndex: index('resource_name_idx').on(table.name),
+  }),
+);
 
 export const roles = authSchema.table('roles', {
   id: serial('id').primaryKey(),

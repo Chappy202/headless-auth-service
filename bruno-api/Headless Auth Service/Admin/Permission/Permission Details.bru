@@ -1,0 +1,19 @@
+meta {
+  name: Permission Details
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{url}}/{{version}}/admin/permissions/:permissionId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  permissionId: 2
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -9,6 +9,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '@/modules/users/user.module';
 import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
 import { RedisModule } from '@/infrastructure/cache/redis.module';
+import { ApiKeyStrategy } from './strategies/api-key.strategy';
+import { ApiKeyValidationService } from './services/api-key-validation.service';
+import { AuthorizationService } from './services/authorization.service';
 
 @Module({
   imports: [
@@ -25,8 +28,15 @@ import { RedisModule } from '@/infrastructure/cache/redis.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    ApiKeyValidationService,
+    LocalStrategy,
+    JwtStrategy,
+    ApiKeyStrategy,
+    AuthorizationService,
+  ],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, AuthorizationService],
 })
 export class AuthModule {}

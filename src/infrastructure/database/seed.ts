@@ -34,7 +34,10 @@ export async function seed(drizzle: DrizzleService, config: ConfigService) {
     .values({ name: 'admin' })
     .returning();
 
-  const [userRole] = await db.insert(roles).values({ name: 'user' }).returning();
+  const [userRole] = await db
+    .insert(roles)
+    .values({ name: 'user' })
+    .returning();
 
   // Create resources
   const [usersResource] = await db
@@ -55,6 +58,14 @@ export async function seed(drizzle: DrizzleService, config: ConfigService) {
   const [apiKeysResource] = await db
     .insert(resources)
     .values({ name: 'api-keys', description: 'API key management' })
+    .returning();
+
+  const [adminMetricsResource] = await db
+    .insert(resources)
+    .values({
+      name: 'admin-metrics',
+      description: 'Admin metrics and usage stats',
+    })
     .returning();
 
   // Create permissions
@@ -87,6 +98,7 @@ export async function seed(drizzle: DrizzleService, config: ConfigService) {
   await createPermissions(rolesResource.id, ['read', 'write', 'admin']);
   await createPermissions(permissionsResource.id, ['read', 'write', 'admin']);
   await createPermissions(apiKeysResource.id, ['read', 'write', 'admin']);
+  await createPermissions(adminMetricsResource.id, ['read']);
 
   // Create super user permission
   const [superPermission] = await db

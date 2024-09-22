@@ -1,0 +1,19 @@
+meta {
+  name: Get User Details
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{url}}/{{version}}/admin/users/:userId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  userId: 1
+}
+
+auth:bearer {
+  token: {{token}}
+}
