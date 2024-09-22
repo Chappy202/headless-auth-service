@@ -12,6 +12,9 @@ import { RedisModule } from '@/infrastructure/cache/redis.module';
 import { ApiKeyStrategy } from './strategies/api-key.strategy';
 import { ApiKeyValidationService } from './services/api-key-validation.service';
 import { AuthorizationService } from './services/authorization.service';
+import { EmailModule } from '../email/email.module';
+import { FeatureToggleService } from '@/common/services/feature-toggle.service';
+import { AppModule } from '@/app.module';
 
 @Module({
   imports: [
@@ -27,6 +30,7 @@ import { AuthorizationService } from './services/authorization.service';
       }),
       inject: [ConfigService],
     }),
+    EmailModule,
   ],
   providers: [
     AuthService,
@@ -35,6 +39,7 @@ import { AuthorizationService } from './services/authorization.service';
     JwtStrategy,
     ApiKeyStrategy,
     AuthorizationService,
+    FeatureToggleService,
   ],
   controllers: [AuthController],
   exports: [AuthService, AuthorizationService],

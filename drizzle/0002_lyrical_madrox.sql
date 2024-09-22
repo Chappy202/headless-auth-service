@@ -1,0 +1,1 @@
+ALTER TABLE "auth"."users" ADD COLUMN "email_verification_token" varchar(255);

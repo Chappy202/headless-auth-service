@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -13,9 +14,11 @@ import { comparePassword, hashPassword } from '@/common/utils/crypto.util';
 import { LoginDto } from '../dto/login.dto';
 import { LoginResponseDto } from '../dto/login-response.dto';
 import { RegisterDto } from '../dto/register.dto';
-import { users, userRoles, roles } from '@/infrastructure/database/schema';
-import { eq } from 'drizzle-orm';
-import { encrypt } from '@/common/utils/encryption.util';
+import { FeatureToggle } from '@/common/enums/feature-toggles.enum';
+import { FeatureToggleService } from '@/common/services/feature-toggle.service';
+import { EmailService } from '@/modules/email/services/email.service';
+import { v4 as uuidv4 } from 'uuid';
+import { loginHistory, sessions } from '@/infrastructure/database/schema';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +28,8 @@ export class AuthService {
     private configService: ConfigService,
     private drizzle: DrizzleService,
     private redisService: RedisService,
+    private emailService: EmailService,
+    private featureToggleService: FeatureToggleService,
   ) {}
 
   private async generateToken(user: any): Promise<string> {
@@ -50,72 +55,140 @@ export class AuthService {
     return access_token;
   }
 
+  private async generateRefreshToken(userId: number): Promise<string> {
+    const payload = { sub: userId };
+    const refresh_token = this.jwtService.sign(payload, {
+      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION'),
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+    });
+
+    const expirationSeconds = parseInt(
+      this.configService.get('JWT_REFRESH_EXPIRATION'),
+      10,
+    );
+    if (isNaN(expirationSeconds)) {
+      throw new Error('Invalid JWT_REFRESH_EXPIRATION configuration');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
+
+    await this.drizzle.db.insert(sessions).values({
+      userId,
+      token: refresh_token,
+      expiresAt,
+      isActive: true,
+    });
+
+    return refresh_token;
+  }
+
   async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.userService.findByUsername(username);
-    if (user && (await comparePassword(pass, user.password))) {
-      return this.userService.findByIdSecure(user.id);
+    const user = await this.userService.findByUsername(username, true);
+    if (
+      user &&
+      'password' in user &&
+      (await comparePassword(pass, user.password))
+    ) {
+      const { password, ...result } = user;
+      return result;
     }
     return null;
   }
 
-  async login(loginDto: LoginDto): Promise<LoginResponseDto> {
+  async login(
+    loginDto: LoginDto,
+    ip: string,
+    userAgent: string,
+  ): Promise<LoginResponseDto> {
     const user = await this.validateUser(loginDto.username, loginDto.password);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
     const access_token = await this.generateToken(user);
-    return { access_token };
+    const refresh_token = await this.generateRefreshToken(user.id);
+
+    await this.createLoginHistory(user.id, ip, userAgent);
+
+    return { access_token, refresh_token };
   }
 
-  async register(registerDto: RegisterDto): Promise<LoginResponseDto> {
-    try {
-      const hashedPassword = await hashPassword(registerDto.password);
-      const encryptedEmail = registerDto.email
-        ? encrypt(registerDto.email)
-        : null;
-
-      const user = await this.drizzle.db.transaction(async (tx) => {
-        const [newUser] = await tx
-          .insert(users)
-          .values({
-            ...registerDto,
-            password: hashedPassword,
-            email: encryptedEmail,
-          })
-          .returning();
-
-        const [defaultRole] = await tx
-          .select()
-          .from(roles)
-          .where(eq(roles.name, 'user'))
-          .limit(1);
-
-        if (!defaultRole) {
-          throw new Error('Default role not found');
-        }
-
-        await tx.insert(userRoles).values({
-          userId: newUser.id,
-          roleId: defaultRole.id,
-        });
-
-        return newUser;
-      });
-
-      const access_token = await this.generateToken(user);
-      return { access_token };
-    } catch (error) {
-      if (error.code === '23505') {
-        throw new ConflictException('Username or email already exists');
-      }
-      throw new InternalServerErrorException(
-        'An error occurred while registering the user',
-      );
+  async register(
+    registerDto: RegisterDto,
+    ip: string,
+    userAgent: string,
+  ): Promise<LoginResponseDto | { message: string }> {
+    if (!this.featureToggleService.isEnabled(FeatureToggle.REGISTRATION)) {
+      throw new ForbiddenException('Registration is currently disabled');
     }
+
+    const { username, email, password } = registerDto;
+
+    const existingUser = await this.userService.findByUsername(username);
+    if (existingUser) {
+      throw new ConflictException('Username already exists');
+    }
+
+    if (email) {
+      const existingEmail = await this.userService.findByEmail(email);
+      if (existingEmail) {
+        throw new ConflictException('Email already exists');
+      }
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const isEmailVerificationEnabled = this.featureToggleService.isEnabled(
+      FeatureToggle.EMAIL_VERIFICATION,
+    );
+    const isEmailVerified = !email || !isEmailVerificationEnabled;
+
+    const newUser = await this.userService.create({
+      username,
+      email,
+      password: hashedPassword,
+      isEmailVerified,
+      mfaEnabled: false,
+      mfaSecret: null,
+      isDisabled: false,
+      emailVerificationToken: null,
+    });
+
+    if (email && isEmailVerificationEnabled) {
+      const verificationToken = uuidv4();
+      await this.userService.setEmailVerificationToken(
+        newUser.id,
+        verificationToken,
+      );
+      await this.emailService.sendVerificationEmail(email, verificationToken);
+      return {
+        message:
+          'Registration successful. Please check your email to verify your account.',
+      };
+    }
+
+    const access_token = await this.generateToken(newUser);
+    const refresh_token = await this.generateRefreshToken(newUser.id);
+
+    await this.createLoginHistory(newUser.id, ip, userAgent);
+
+    return { access_token, refresh_token };
   }
 
   async logout(token: string): Promise<void> {
     await this.blacklistToken(token);
+  }
+
+  private async createLoginHistory(
+    userId: number,
+    ip: string,
+    userAgent: string,
+  ): Promise<void> {
+    await this.drizzle.db.insert(loginHistory).values({
+      userId,
+      ip,
+      userAgent,
+    });
   }
 
   private async blacklistToken(token: string): Promise<void> {

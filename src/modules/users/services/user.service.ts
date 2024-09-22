@@ -1,151 +1,134 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { users } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
+import { encrypt, decrypt } from '@/common/utils/encryption.util';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UserProfileDto } from '../dto/user-profile.dto';
-import { hashPassword } from '@/common/utils/crypto.util';
-import { encrypt, decrypt } from '@/common/utils/encryption.util';
+import { UserDto } from '../dto/user.dto';
 
 @Injectable()
 export class UserService {
   constructor(private drizzle: DrizzleService) {}
 
-  async findByUsername(
-    username: string,
-  ): Promise<typeof users.$inferSelect | null> {
-    const [user] = await this.drizzle.db
-      .select()
-      .from(users)
-      .where(eq(users.username, username))
-      .limit(1);
+  private async findUser(
+    where: any,
+    includePassword: boolean = false,
+  ): Promise<UserDto | null> {
+    const query = this.drizzle.db.select().from(users).where(where).limit(1);
 
-    if (user && user.email) {
-      user.email = decrypt(user.email);
-    }
+    const [rawUser] = await query;
 
-    return user || null;
-  }
-
-  async findById(id: number): Promise<typeof users.$inferSelect | null> {
-    const [user] = await this.drizzle.db
-      .select()
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-
-    if (user && user.email) {
-      user.email = decrypt(user.email);
-    }
-
-    return user || null;
-  }
-
-  async findByIdSecure(
-    id: number,
-  ): Promise<Omit<typeof users.$inferSelect, 'password'> | null> {
-    const [user] = await this.drizzle.db
-      .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        isEmailVerified: users.isEmailVerified,
-        createdAt: users.createdAt,
-        mfaEnabled: users.mfaEnabled,
-        mfaSecret: users.mfaSecret,
-        isDisabled: users.isDisabled,
-      })
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-
-    if (!user) {
+    if (!rawUser) {
       return null;
+    }
+
+    const user: UserDto = {
+      id: rawUser.id,
+      username: rawUser.username,
+      email: rawUser.email ? decrypt(rawUser.email) : '',
+      isEmailVerified: rawUser.isEmailVerified,
+      createdAt: rawUser.createdAt,
+      mfaEnabled: rawUser.mfaEnabled,
+      mfaSecret: rawUser.mfaSecret,
+      isDisabled: rawUser.isDisabled,
+      emailVerificationToken: rawUser.emailVerificationToken,
+    };
+
+    if (includePassword) {
+      user.password = rawUser.password;
     }
 
     return user;
   }
 
-  async getUserProfile(id: number): Promise<UserProfileDto> {
-    const [user] = await this.drizzle.db
-      .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        isEmailVerified: users.isEmailVerified,
-        createdAt: users.createdAt,
-        mfaEnabled: users.mfaEnabled,
-      })
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return this.mapToUserProfileDto(user);
+  async findByUsername(
+    username: string,
+    includePassword: boolean = false,
+  ): Promise<UserDto | null> {
+    return this.findUser(eq(users.username, username), includePassword);
   }
 
-  async updateProfile(
-    id: number,
-    updateProfileDto: UpdateProfileDto,
-  ): Promise<UserProfileDto> {
-    const updateData: Partial<typeof users.$inferInsert> = {
-      ...updateProfileDto,
+  async findByEmail(email: string): Promise<UserDto | null> {
+    const encryptedEmail = encrypt(email);
+    return this.findUser(eq(users.email, encryptedEmail));
+  }
+
+  async findById(id: number): Promise<UserDto | null> {
+    return this.findUser(eq(users.id, id));
+  }
+
+  async create(userData: Omit<UserDto, 'id' | 'createdAt'>): Promise<UserDto> {
+    const dataToInsert: typeof users.$inferInsert = {
+      username: userData.username,
+      email: userData.email ? encrypt(userData.email) : null,
+      password: userData.password,
+      isEmailVerified: userData.isEmailVerified,
+      mfaEnabled: userData.mfaEnabled,
+      mfaSecret: userData.mfaSecret || null,
+      isDisabled: userData.isDisabled,
+      emailVerificationToken: userData.emailVerificationToken || null,
     };
-
-    if (updateProfileDto.password) {
-      updateData.password = await hashPassword(updateProfileDto.password);
-    }
-
-    if (updateProfileDto.email) {
-      updateData.email = encrypt(updateProfileDto.email);
-    }
-
-    const [updatedUser] = await this.drizzle.db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, id))
-      .returning();
-
-    if (!updatedUser) {
-      throw new NotFoundException('User not found');
-    }
-
-    return this.mapToUserProfileDto(updatedUser);
-  }
-
-  async create(
-    userData: Omit<typeof users.$inferInsert, 'id' | 'createdAt'>,
-  ): Promise<typeof users.$inferSelect> {
-    const dataToInsert = { ...userData };
-    if (dataToInsert.email) {
-      dataToInsert.email = encrypt(dataToInsert.email);
-    }
 
     const [newUser] = await this.drizzle.db
       .insert(users)
       .values(dataToInsert)
       .returning();
 
-    if (newUser.email) {
-      newUser.email = decrypt(newUser.email);
-    }
-
-    return newUser;
+    return this.findById(newUser.id) as Promise<UserDto>;
   }
 
-  private mapToUserProfileDto(
-    user: Partial<typeof users.$inferSelect>,
-  ): UserProfileDto {
+  async setEmailVerificationToken(
+    userId: number,
+    token: string,
+  ): Promise<void> {
+    await this.drizzle.db
+      .update(users)
+      .set({ emailVerificationToken: token })
+      .where(eq(users.id, userId));
+  }
+
+  async getUserProfile(userId: number): Promise<UserProfileDto> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return this.mapToUserProfileDto(user);
+  }
+
+  async updateProfile(
+    userId: number,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<UserProfileDto> {
+    const updateData: Partial<typeof users.$inferInsert> = {
+      ...updateProfileDto,
+    };
+
+    if (updateProfileDto.email) {
+      updateData.email = encrypt(updateProfileDto.email);
+    }
+
+    await this.drizzle.db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId));
+
+    const updatedUser = await this.findById(userId);
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+
+    return this.mapToUserProfileDto(updatedUser);
+  }
+
+  private mapToUserProfileDto(user: UserDto): UserProfileDto {
     return {
-      id: user.id!,
-      username: user.username!,
-      email: user.email ? decrypt(user.email) : null,
-      isEmailVerified: user.isEmailVerified!,
-      createdAt: user.createdAt!,
-      mfaEnabled: user.mfaEnabled!,
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+      mfaEnabled: user.mfaEnabled,
     };
   }
 }

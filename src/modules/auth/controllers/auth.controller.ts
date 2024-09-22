@@ -2,13 +2,15 @@ import {
   Controller,
   Post,
   UseGuards,
-  Request,
   Body,
   HttpCode,
   HttpStatus,
   ConflictException,
+  Req,
+  Ip,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -23,6 +25,9 @@ import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginResponseDto } from '../dto/login-response.dto';
 import { ErrorResponseDto } from '@/common/dto/error-response.dto';
+import { RequireFeature } from '@/common/decorators/feature-toggle.decorator';
+import { FeatureToggle } from '@/common/enums/feature-toggles.enum';
+import { FeatureToggleGuard } from '@/common/guards/feature-toggle.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -44,16 +49,33 @@ export class AuthController {
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
-  async login(@Body() loginDto: LoginDto): Promise<LoginResponseDto> {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Req() req: Request,
+    @Ip() ip: string,
+  ): Promise<LoginResponseDto> {
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    return this.authService.login(loginDto, ip, userAgent);
   }
 
   @Post('register')
+  @RequireFeature(FeatureToggle.REGISTRATION)
+  @UseGuards(FeatureToggleGuard)
   @ApiOperation({ summary: 'User registration' })
   @ApiResponse({
     status: 201,
     description: 'User registered successfully',
     type: LoginResponseDto,
+  })
+  @ApiResponse({
+    status: 202,
+    description: 'Registration successful, email verification required',
+    schema: { properties: { message: { type: 'string' } } },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Registration is disabled',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 409,
@@ -65,17 +87,13 @@ export class AuthController {
     description: 'Bad request',
     type: ErrorResponseDto,
   })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
-  async register(@Body() registerDto: RegisterDto): Promise<LoginResponseDto> {
-    try {
-      return await this.authService.register(registerDto);
-    } catch (error) {
-      if (error instanceof ConflictException) {
-        throw new ConflictException(error.message);
-      }
-      throw error;
-    }
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Req() req: Request,
+    @Ip() ip: string,
+  ): Promise<LoginResponseDto | { message: string }> {
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    return this.authService.register(registerDto, ip, userAgent);
   }
 
   @Post('logout')
@@ -100,7 +118,7 @@ export class AuthController {
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
-  async logout(@Request() req) {
+  async logout(@Req() req: Request) {
     const token = req.headers.authorization.split(' ')[1];
     await this.authService.logout(token);
     return { message: 'Logged out successfully' };
