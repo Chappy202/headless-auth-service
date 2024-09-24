@@ -3,12 +3,12 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
+  // ExpressJS
+  // protected async getTracker(req: Record<string, any>): Promise<string> {
+  //   return req.ips.length ? req.ips[0] : req.ip;
+  // }
+
   protected async getTracker(req: Record<string, any>): Promise<string> {
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (xForwardedFor) {
-      const ips = xForwardedFor.split(',').map((ip: string) => ip.trim());
-      return ips[0];
-    }
-    return req.ip;
+    return req.headers['x-forwarded-for']?.split(',')[0] || req.ip;
   }
 }

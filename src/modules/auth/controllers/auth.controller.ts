@@ -36,9 +36,11 @@ import { RefreshTokenResponseDto } from '../dto/refresh-token-response.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
 import { UserService } from '@/modules/users/services/user.service';
+import { CustomThrottlerGuard } from '@/common/guards/throttler.guard';
 
 @ApiTags('auth')
 @Controller('auth')
+@UseGuards(CustomThrottlerGuard)
 export class AuthController {
   constructor(
     private authService: AuthService,
@@ -185,7 +187,11 @@ export class AuthController {
   ): Promise<RefreshTokenResponseDto> {
     const userAgent = req.headers['user-agent'] || 'Unknown';
     const clientIp = getClientIp(ip);
-    return this.authService.refreshToken(refreshTokenDto.refreshToken, userAgent, clientIp);
+    return this.authService.refreshToken(
+      refreshTokenDto.refreshToken,
+      userAgent,
+      clientIp,
+    );
   }
 
   @Get('me')
