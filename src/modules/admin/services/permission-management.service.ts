@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
@@ -21,6 +22,7 @@ import {
 
 @Injectable()
 export class PermissionManagementService {
+  private readonly logger = new Logger(PermissionManagementService.name);
   constructor(private drizzle: DrizzleService) {}
 
   async createPermission(
@@ -93,6 +95,10 @@ export class PermissionManagementService {
           ignored++;
         }
       }
+
+      this.logger.log(
+        `Permissions assigned to user ${userId}: ${permissionIds.join(', ')}`,
+      );
 
       return {
         added,

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -27,6 +28,9 @@ import { SessionService } from './session.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private readonly maxLoginAttempts: number;
+  private readonly lockoutTime: number;
   constructor(
     private userService: UserService,
     private sessionService: SessionService,
@@ -36,7 +40,11 @@ export class AuthService {
     private redisService: RedisService,
     private emailService: EmailService,
     private featureToggleService: FeatureToggleService,
-  ) {}
+  ) {
+    this.maxLoginAttempts =
+      this.configService.get<number>('MAX_LOGIN_ATTEMPTS') || 5;
+    this.lockoutTime = this.configService.get<number>('LOCKOUT_TIME') || 900; // 15 minutes in seconds
+  }
 
   private async generateToken(user: any): Promise<string> {
     const payload = { username: user.username, sub: user.id };
@@ -119,10 +127,32 @@ export class AuthService {
     ip: string,
     userAgent: string,
   ): Promise<LoginResponseDto> {
+    const loginAttemptsKey = `login_attempts:${loginDto.username}`;
+    const loginAttempts = await this.redisService
+      .getClient()
+      .get(loginAttemptsKey);
+
+    if (loginAttempts && parseInt(loginAttempts) >= this.maxLoginAttempts) {
+      throw new UnauthorizedException(
+        'Account is locked. Please try again later.',
+      );
+    }
+
     const user = await this.validateUser(loginDto.username, loginDto.password);
     if (!user) {
+      await this.redisService.getClient().incr(loginAttemptsKey);
+      await this.redisService
+        .getClient()
+        .expire(loginAttemptsKey, this.lockoutTime);
+
+      this.logger.warn(
+        `Failed login attempt for username: ${loginDto.username}, IP: ${ip}`,
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Reset login attempts on successful login
+    await this.redisService.getClient().del(loginAttemptsKey);
 
     if (user.isDisabled) {
       throw new ForbiddenException('Account is disabled');
@@ -225,9 +255,7 @@ export class AuthService {
         await this.sessionService.deleteSession(session.id);
       } else {
         // Log that we couldn't find the session, but don't throw an error
-        console.warn(
-          `Session not found for refresh token during logout. Token: ${refreshToken}`,
-        );
+        console.warn(`Session not found for refresh token during logout.`);
       }
 
       // Always clear any user-related data from Redis or other caches

@@ -5,6 +5,7 @@ import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { sessions } from '@/infrastructure/database/schema';
 import { eq, and, lt, desc, isNull } from 'drizzle-orm';
 import { ConfigService } from '@nestjs/config';
+import { parseTimeToSeconds } from '@/common/utils/time.util';
 
 @Injectable()
 export class SessionService {

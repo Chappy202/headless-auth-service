@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import { apiKeys } from '@/infrastructure/database/schema';
 import { eq } from 'drizzle-orm';
@@ -7,15 +7,17 @@ import {
   ApiKeyResponseDto,
 } from '../dto/api-key-management.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { generateSecureToken } from '@/common/utils/crypto.util';
 
 @Injectable()
 export class ApiKeyManagementService {
+  private readonly logger = new Logger(ApiKeyManagementService.name);
   constructor(private drizzle: DrizzleService) {}
 
   async createApiKey(
     createApiKeyDto: CreateApiKeyDto,
   ): Promise<ApiKeyResponseDto> {
-    const key = uuidv4();
+    const key = generateSecureToken(32);
     const [newApiKey] = await this.drizzle.db
       .insert(apiKeys)
       .values({
@@ -26,6 +28,7 @@ export class ApiKeyManagementService {
           : null,
       })
       .returning();
+    this.logger.log(`New API key created: ${newApiKey.name}`);
     return this.mapToApiKeyResponseDto(newApiKey);
   }
 
