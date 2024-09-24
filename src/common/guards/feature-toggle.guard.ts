@@ -12,12 +12,17 @@ export class FeatureToggleGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const feature = this.reflector.get<FeatureToggle>(
-      'feature',
+      'FEATURE',
       context.getHandler(),
     );
+
     if (!feature) {
-      return true;
+      return true; // If no feature, allow access
     }
-    return this.featureToggleService.isEnabled(feature);
+
+    const isEnabled = this.featureToggleService.isEnabled(feature);
+    console.log(`Feature ${feature} is ${isEnabled ? 'enabled' : 'disabled'}`);
+
+    return isEnabled;
   }
 }

@@ -99,7 +99,6 @@ export class UserManagementController {
   async getUserDetails(
     @Param('id') id: string,
   ): Promise<UserDetailsResponseDto> {
-    console.log('getUserDetails endpoint hit');
     try {
       return await this.userManagementService.getUserDetails(+id);
     } catch (error) {

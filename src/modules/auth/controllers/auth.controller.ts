@@ -28,6 +28,7 @@ import { ErrorResponseDto } from '@/common/dto/error-response.dto';
 import { RequireFeature } from '@/common/decorators/feature-toggle.decorator';
 import { FeatureToggle } from '@/common/enums/feature-toggles.enum';
 import { FeatureToggleGuard } from '@/common/guards/feature-toggle.guard';
+import { getClientIp } from '@/common/utils/ip.util';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -47,15 +48,14 @@ export class AuthController {
     description: 'Unauthorized',
     type: ErrorResponseDto,
   })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
   async login(
     @Body() loginDto: LoginDto,
     @Req() req: Request,
     @Ip() ip: string,
   ): Promise<LoginResponseDto> {
     const userAgent = req.headers['user-agent'] || 'Unknown';
-    return this.authService.login(loginDto, ip, userAgent);
+    const clientIp = getClientIp(ip);
+    return this.authService.login(loginDto, clientIp, userAgent);
   }
 
   @Post('register')
@@ -93,7 +93,8 @@ export class AuthController {
     @Ip() ip: string,
   ): Promise<LoginResponseDto | { message: string }> {
     const userAgent = req.headers['user-agent'] || 'Unknown';
-    return this.authService.register(registerDto, ip, userAgent);
+    const clientIp = getClientIp(ip);
+    return this.authService.register(registerDto, clientIp, userAgent);
   }
 
   @Post('logout')

@@ -7,8 +7,8 @@ export class FeatureToggleService {
 
   isEnabled(feature: string): boolean {
     return (
-      this.configService.get<boolean>(`FEATURE_${feature.toUpperCase()}`) ===
-      true
+      this.configService.get<string>(`FEATURE_${feature.toUpperCase()}`) ===
+      'true'
     );
   }
 }

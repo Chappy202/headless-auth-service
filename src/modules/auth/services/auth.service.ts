@@ -19,6 +19,7 @@ import { FeatureToggleService } from '@/common/services/feature-toggle.service';
 import { EmailService } from '@/modules/email/services/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import { loginHistory, sessions } from '@/infrastructure/database/schema';
+import { getClientIp } from '@/common/utils/ip.util';
 
 @Injectable()
 export class AuthService {
@@ -55,7 +56,11 @@ export class AuthService {
     return access_token;
   }
 
-  private async generateRefreshToken(userId: number): Promise<string> {
+  private async generateRefreshToken(
+    userId: number,
+    ip: string,
+    userAgent: string,
+  ): Promise<string> {
     const payload = { sub: userId };
     const refresh_token = this.jwtService.sign(payload, {
       expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION'),
@@ -78,6 +83,9 @@ export class AuthService {
       token: refresh_token,
       expiresAt,
       isActive: true,
+      lastUsedAt: new Date(),
+      userAgent: userAgent,
+      ipAddress: ip,
     });
 
     return refresh_token;
@@ -105,8 +113,23 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    if (user.isDisabled) {
+      throw new ForbiddenException('Account is disabled');
+    }
+
+    const isEmailVerificationEnabled = this.featureToggleService.isEnabled(
+      FeatureToggle.EMAIL_VERIFICATION,
+    );
+    if (isEmailVerificationEnabled && user.email && !user.isEmailVerified) {
+      throw new ForbiddenException('Email not verified');
+    }
     const access_token = await this.generateToken(user);
-    const refresh_token = await this.generateRefreshToken(user.id);
+    const refresh_token = await this.generateRefreshToken(
+      user.id,
+      ip,
+      userAgent,
+    );
 
     await this.createLoginHistory(user.id, ip, userAgent);
 
@@ -168,7 +191,11 @@ export class AuthService {
     }
 
     const access_token = await this.generateToken(newUser);
-    const refresh_token = await this.generateRefreshToken(newUser.id);
+    const refresh_token = await this.generateRefreshToken(
+      newUser.id,
+      ip,
+      userAgent,
+    );
 
     await this.createLoginHistory(newUser.id, ip, userAgent);
 
