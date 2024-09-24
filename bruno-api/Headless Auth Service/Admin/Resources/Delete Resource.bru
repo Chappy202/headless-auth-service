@@ -1,0 +1,19 @@
+meta {
+  name: Delete Resource
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{url}}/{{version}}/admin/resources/:resourceId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  resourceId: 3
+}
+
+auth:bearer {
+  token: {{token}}
+}

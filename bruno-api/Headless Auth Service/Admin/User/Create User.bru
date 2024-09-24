@@ -1,0 +1,36 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/{{version}}/admin/users
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "username": "newuser",
+    "email": "newuser@example.com",
+    "password": "StrongPassword123!",
+    "verifyEmail": true,
+    "roleIds": [
+      1
+    ],
+    "permissionIds": [
+      1,
+      2,
+      3
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Summary
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{url}}/{{version}}/admin/metrics
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}

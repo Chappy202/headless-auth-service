@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="0.4.0"></a>
+# [0.4.0](https://github.com/Chappy202/headless-auth-service/compare/v0.3.1...v0.4.0) (2024-09-24)
+
+
+### :sparkle: Features
+
+* add basic security improvements, login attempts & rate limiting ([9665d0f](https://github.com/Chappy202/headless-auth-service/commit/9665d0f))
+* add feature toggle capabilities ([eeb0286](https://github.com/Chappy202/headless-auth-service/commit/eeb0286))
+* add initial seed data for permissions, roles and resources ([d131ac9](https://github.com/Chappy202/headless-auth-service/commit/d131ac9))
+* **admin:** add logic to assign permissions to roles ([ea381c5](https://github.com/Chappy202/headless-auth-service/commit/ea381c5))
+* **admin:** add metrics summary endpoint ([67b8d5d](https://github.com/Chappy202/headless-auth-service/commit/67b8d5d))
+* **admin:** add role management and bruno collections ([b3f3127](https://github.com/Chappy202/headless-auth-service/commit/b3f3127))
+* **auth:** enable request throttler ([48f80df](https://github.com/Chappy202/headless-auth-service/commit/48f80df))
+
+
+### Chores
+
+* add dependabot updates ([7b48ac1](https://github.com/Chappy202/headless-auth-service/commit/7b48ac1))
+* **deps:** bump axios in the npm_and_yarn group across 1 directory ([6a3d842](https://github.com/Chappy202/headless-auth-service/commit/6a3d842))
+* update dependabot to use development branch ([3d13108](https://github.com/Chappy202/headless-auth-service/commit/3d13108))
+* update dependabot to use npm instead of yarn ([68558c6](https://github.com/Chappy202/headless-auth-service/commit/68558c6))
+* use yarn for dependabot updates ([1d56760](https://github.com/Chappy202/headless-auth-service/commit/1d56760))
+
+<a name="0.3.2"></a>
+## [0.3.2](https://github.com/Chappy202/headless-auth-service/compare/v0.3.1...v0.3.2) (2024-09-21)
+
+
+### :sparkle: Features
+
+* add initial seed data for permissions, roles and resources ([d131ac9](https://github.com/Chappy202/headless-auth-service/commit/d131ac9))
+* **admin:** add logic to assign permissions to roles ([ea381c5](https://github.com/Chappy202/headless-auth-service/commit/ea381c5))
+* **admin:** add role management and bruno collections ([b3f3127](https://github.com/Chappy202/headless-auth-service/commit/b3f3127))
+
+
+### Chores
+
+* add dependabot updates ([7b48ac1](https://github.com/Chappy202/headless-auth-service/commit/7b48ac1))
+* **deps:** bump axios in the npm_and_yarn group across 1 directory ([6a3d842](https://github.com/Chappy202/headless-auth-service/commit/6a3d842))
+* update dependabot to use development branch ([3d13108](https://github.com/Chappy202/headless-auth-service/commit/3d13108))
+* update dependabot to use npm instead of yarn ([68558c6](https://github.com/Chappy202/headless-auth-service/commit/68558c6))
+* use yarn for dependabot updates ([1d56760](https://github.com/Chappy202/headless-auth-service/commit/1d56760))
+
+<a name="0.3.1"></a>
+## [0.3.1](https://github.com/Chappy202/headless-auth-service/compare/v0.3.0...v0.3.1) (2024-09-12)
+
+
+### :bug: Bug Fixes
+
+* fix super user permission override not working when applied to not super role users ([42be730](https://github.com/Chappy202/headless-auth-service/commit/42be730))
+
+
+### :sparkle: Features
+
+* add roles and permission details to user details responses ([4d935d6](https://github.com/Chappy202/headless-auth-service/commit/4d935d6))
+
+
+### :white_check_mark: Tests
+
+* update bruno collections ([9b5f403](https://github.com/Chappy202/headless-auth-service/commit/9b5f403))
+
+
+### Chores
+
+* add contributing readme ([806dfd8](https://github.com/Chappy202/headless-auth-service/commit/806dfd8))
+
 <a name="0.3.0"></a>
 # 0.3.0 (2024-09-12)
 

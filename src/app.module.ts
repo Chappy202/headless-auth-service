@@ -2,22 +2,36 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
+import {
+  ThrottlerModule,
+  ThrottlerModuleOptions,
+  ThrottlerStorage,
+} from '@nestjs/throttler';
 import { RedisModule } from './infrastructure/cache/redis.module';
 import { DrizzleModule } from './infrastructure/database/drizzle.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/users/user.module';
 import { AdminModule } from './modules/admin/admin.module';
-import { PermissionsModule } from './modules/permissions/permissions.module';
-import { ResourcesModule } from './modules/resources/resources.module';
-import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { HealthModule } from './modules/health/health.module';
 import { EmailModule } from './modules/email/email.module';
+import { FeatureToggleService } from './common/services/feature-toggle.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      load: [
+        () => ({
+          features: {
+            registration: process.env.FEATURE_REGISTRATION === 'true',
+            emailVerification:
+              process.env.FEATURE_EMAIL_VERIFICATION === 'false',
+          },
+        }),
+      ],
+    }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -40,11 +54,10 @@ import { EmailModule } from './modules/email/email.module';
     AuthModule,
     UserModule,
     AdminModule,
-    PermissionsModule,
-    ResourcesModule,
-    ApiKeysModule,
     HealthModule,
     EmailModule,
   ],
+  providers: [FeatureToggleService],
+  exports: [FeatureToggleService],
 })
 export class AppModule {}

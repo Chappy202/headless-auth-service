@@ -9,6 +9,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '@/modules/users/user.module';
 import { DrizzleModule } from '@/infrastructure/database/drizzle.module';
 import { RedisModule } from '@/infrastructure/cache/redis.module';
+import { ApiKeyStrategy } from './strategies/api-key.strategy';
+import { ApiKeyValidationService } from './services/api-key-validation.service';
+import { AuthorizationService } from './services/authorization.service';
+import { EmailModule } from '../email/email.module';
+import { FeatureToggleService } from '@/common/services/feature-toggle.service';
+import { AppModule } from '@/app.module';
+import { parseTimeToSeconds } from '@/common/utils/time.util';
+import { SessionService } from './services/session.service';
+import { SessionCleanupTask } from './tasks/session-cleanup.task';
 
 @Module({
   imports: [
@@ -18,15 +27,33 @@ import { RedisModule } from '@/infrastructure/cache/redis.module';
     RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const jwtExpirationString = configService.get<string>('JWT_EXPIRATION');
+        if (!jwtExpirationString) {
+          throw new Error('JWT_EXPIRATION is not set');
+        }
+        const expirationSeconds = parseTimeToSeconds(jwtExpirationString);
+        return {
+          secret: configService.get<string>('JWT_SECRET'),
+          signOptions: { expiresIn: expirationSeconds },
+        };
+      },
       inject: [ConfigService],
     }),
+    EmailModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    ApiKeyValidationService,
+    LocalStrategy,
+    JwtStrategy,
+    ApiKeyStrategy,
+    AuthorizationService,
+    FeatureToggleService,
+    SessionService,
+    SessionCleanupTask,
+  ],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, AuthorizationService],
 })
 export class AuthModule {}

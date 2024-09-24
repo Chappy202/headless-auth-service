@@ -1,0 +1,30 @@
+meta {
+  name: Update Resource
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{url}}/{{version}}/admin/resources/:resourceId
+  body: json
+  auth: bearer
+}
+
+params:path {
+  resourceId: 3
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "articles",
+    "description": "Anything and everything articles"
+  }
+}

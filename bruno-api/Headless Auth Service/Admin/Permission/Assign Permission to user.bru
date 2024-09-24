@@ -1,0 +1,33 @@
+meta {
+  name: Assign Permission to user
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{url}}/{{version}}/admin/permissions/assign-to-user/:userId
+  body: json
+  auth: bearer
+}
+
+params:path {
+  userId: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "permissionIds": [
+      1,
+      2,
+      3
+    ]
+  }
+}

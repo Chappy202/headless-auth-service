@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
@@ -6,13 +6,35 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
 import { ConfigService } from '@nestjs/config';
 import { initializeEncryption } from './common/utils/encryption.util';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import * as csurf from 'csurf';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     snapshot: true,
   });
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
+          connectSrc: ["'self'"],
+        },
+      },
+      referrerPolicy: {
+        policy: 'strict-origin-when-cross-origin',
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+    }),
+  );
 
   app.enableVersioning({
     type: VersioningType.URI,
@@ -55,10 +77,8 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new DatabaseExceptionFilter());
-
-  // TODO
-  // const throttlerGuard = app.get(CustomThrottlerGuard);
-  // app.useGlobalGuards(throttlerGuard);
+  const httpAdapter = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
 
   await app.listen(3000);
 }

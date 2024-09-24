@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { SendEmailDto } from '../dto/send-email.dto';
 import { EmailResponseDto } from '../dto/email-response.dto';
+import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class EmailService {
   private transporter: nodemailer.Transporter;
+  private readonly logger = new Logger(EmailService.name);
 
   constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
@@ -22,11 +24,13 @@ export class EmailService {
 
   async sendEmail(sendEmailDto: SendEmailDto): Promise<EmailResponseDto> {
     try {
+      const sanitizedContent = this.sanitizeHtml(sendEmailDto.content);
+
       await this.transporter.sendMail({
         from: this.configService.get<string>('EMAIL_FROM'),
         to: sendEmailDto.to,
         subject: sendEmailDto.subject,
-        html: sendEmailDto.content,
+        html: sanitizedContent,
       });
 
       return {
@@ -34,6 +38,7 @@ export class EmailService {
         message: 'Email sent successfully',
       };
     } catch (error) {
+      this.logger.error(`Failed to send email: ${error.message}`, error.stack);
       return {
         success: false,
         message: `Failed to send email: ${error.message}`,
@@ -66,6 +71,15 @@ export class EmailService {
       to,
       subject: 'Reset Your Password',
       content,
+    });
+  }
+
+  private sanitizeHtml(html: string): string {
+    return sanitizeHtml(html, {
+      allowedTags: ['b', 'i', 'em', 'strong', 'a', 'p', 'br'],
+      allowedAttributes: {
+        a: ['href'],
+      },
     });
   }
 }

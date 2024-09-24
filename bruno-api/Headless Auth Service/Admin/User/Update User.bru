@@ -5,9 +5,13 @@ meta {
 }
 
 put {
-  url: {{url}}/{{version}}/admin/users/%7BuserId%7D
+  url: {{url}}/{{version}}/admin/users/:userId
   body: json
   auth: bearer
+}
+
+params:path {
+  userId: 2
 }
 
 headers {
@@ -20,7 +24,16 @@ auth:bearer {
 
 body:json {
   {
-    "username": "updatedusername",
-    "email": "updated@example.com"
+    "username": "updateduser",
+    "email": "updated@example.com",
+    "mfaEnabled": false,
+    "isDisabled": false,
+    "roleIds": [
+      2
+    ],
+    "permissionIds": [
+      4,
+      5
+    ]
   }
 }

@@ -1,0 +1,19 @@
+meta {
+  name: Revoke Key
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{url}}/{{version}}/admin/api-keys/:apiKeyId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  apiKeyId: 1
+}
+
+auth:bearer {
+  token: {{token}}
+}

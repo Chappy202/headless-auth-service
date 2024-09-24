@@ -1,0 +1,31 @@
+meta {
+  name: Update Permission
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{url}}/{{version}}/admin/permissions/:permissionId
+  body: json
+  auth: bearer
+}
+
+params:path {
+  permissionId: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "write:users",
+    "type": "write",
+    "resourceId": 2
+  }
+}
