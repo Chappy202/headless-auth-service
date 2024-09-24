@@ -6,6 +6,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
 import {
@@ -32,6 +33,7 @@ import { AuthorizationService } from '@/modules/auth/services/authorization.serv
 
 @Injectable()
 export class UserManagementService {
+  private readonly logger = new Logger(UserManagementService.name);
   constructor(
     private drizzle: DrizzleService,
     private emailService: EmailService,
@@ -240,6 +242,9 @@ export class UserManagementService {
         if (duplicateUser) {
           throw new ConflictException('Username already exists');
         }
+        this.logger.warn(
+          `Admin ${adminUserId} attempting to change username for user ${userId}`,
+        );
         updateData.username = username;
       }
 
@@ -260,10 +265,16 @@ export class UserManagementService {
       }
 
       if (password) {
+        this.logger.warn(
+          `Admin ${adminUserId} attempting to change password for user ${userId}`,
+        );
         updateData.password = await hashPassword(password);
       }
 
       if (mfaEnabled !== undefined) {
+        this.logger.warn(
+          `Admin ${adminUserId} attempting to change MFA status for user ${userId}`,
+        );
         updateData.mfaEnabled = mfaEnabled;
       }
 

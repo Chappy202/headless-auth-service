@@ -7,9 +7,9 @@ import {
   userRoles,
   resources,
 } from './schema';
-import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { eq } from 'drizzle-orm';
+import { hashPassword } from '@/common/utils/crypto.util';
 
 export async function seed(drizzle: DrizzleService, config: ConfigService) {
   const db = drizzle.db;
@@ -137,7 +137,7 @@ export async function seed(drizzle: DrizzleService, config: ConfigService) {
   // Create initial admin user
   const username = config.get('INITIAL_ADMIN_USERNAME') || 'admin';
   const password = config.get('INITIAL_ADMIN_PASSWORD') || 'adminpassword';
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await hashPassword(password);
 
   const [adminUser] = await db
     .insert(users)

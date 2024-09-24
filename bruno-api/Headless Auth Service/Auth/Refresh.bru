@@ -1,11 +1,11 @@
 meta {
-  name: Login
+  name: Refresh
   type: http
-  seq: 2
+  seq: 4
 }
 
 post {
-  url: {{url}}/{{version}}/auth/login
+  url: {{url}}/{{version}}/auth/refresh
   body: json
   auth: none
 }
@@ -16,8 +16,7 @@ headers {
 
 body:json {
   {
-    "username": "superadmin",
-    "password": "Password01"
+    "refreshToken": "{{refresh_token}}"
   }
 }
 

@@ -1,26 +1,23 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsEmail,
+  IsOptional,
   MinLength,
   MaxLength,
-  IsNotEmpty,
   Matches,
-  IsOptional,
 } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'johndoe', description: 'The username of the user' })
   @IsString()
-  @IsNotEmpty()
   @MinLength(3)
   @MaxLength(20)
   username: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'john@example.com',
-    description: 'The email of the user',
-    required: false,
+    description: 'The email of the user (optional)',
   })
   @IsEmail()
   @IsOptional()
@@ -32,7 +29,7 @@ export class RegisterDto {
   })
   @IsString()
   @MinLength(8)
-  @MaxLength(72) // bcrypt max length
+  @MaxLength(72)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message: 'Password is too weak',
   })

@@ -7,13 +7,34 @@ import { DatabaseExceptionFilter } from './common/filters/database-exception.fil
 import { ConfigService } from '@nestjs/config';
 import { initializeEncryption } from './common/utils/encryption.util';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import * as csurf from 'csurf';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     snapshot: true,
   });
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'validator.swagger.io'],
+          connectSrc: ["'self'"],
+        },
+      },
+      referrerPolicy: {
+        policy: 'strict-origin-when-cross-origin',
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+    }),
+  );
 
   app.enableVersioning({
     type: VersioningType.URI,
@@ -58,10 +79,6 @@ async function bootstrap() {
   app.useGlobalFilters(new DatabaseExceptionFilter());
   const httpAdapter = app.get(HttpAdapterHost);
   app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
-
-  // TODO
-  // const throttlerGuard = app.get(CustomThrottlerGuard);
-  // app.useGlobalGuards(throttlerGuard);
 
   await app.listen(3000);
 }
