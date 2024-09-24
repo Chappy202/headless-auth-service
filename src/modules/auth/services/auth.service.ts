@@ -3,9 +3,10 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '@/modules/users/services/user.service';
 import { DrizzleService } from '@/infrastructure/database/drizzle.service';
@@ -20,6 +21,7 @@ import { EmailService } from '@/modules/email/services/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import { loginHistory, sessions } from '@/infrastructure/database/schema';
 import { getClientIp } from '@/common/utils/ip.util';
+import { and, eq } from 'drizzle-orm';
 
 @Injectable()
 export class AuthService {
@@ -202,8 +204,23 @@ export class AuthService {
     return { access_token, refresh_token };
   }
 
-  async logout(token: string): Promise<void> {
-    await this.blacklistToken(token);
+  async logout(accessToken: string, refreshToken: string): Promise<void> {
+    try {
+      const decodedToken = this.jwtService.verify(accessToken) as {
+        sub: number;
+      };
+      await Promise.all([
+        this.blacklistToken(accessToken),
+        this.invalidateRefreshToken(decodedToken.sub, refreshToken),
+      ]);
+    } catch (error) {
+      // If the access token is invalid, we still try to invalidate the refresh token
+      if (error instanceof JsonWebTokenError) {
+        await this.invalidateRefreshTokenByToken(refreshToken);
+      } else {
+        throw error;
+      }
+    }
   }
 
   private async createLoginHistory(
@@ -256,5 +273,30 @@ export class AuthService {
     }
 
     return JSON.parse(tokenData);
+  }
+
+  async invalidateRefreshToken(
+    userId: number,
+    refreshToken: string,
+  ): Promise<void> {
+    await this.drizzle.db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(
+        and(eq(sessions.userId, userId), eq(sessions.token, refreshToken)),
+      );
+  }
+
+  private async invalidateRefreshTokenByToken(
+    refreshToken: string,
+  ): Promise<void> {
+    const result = await this.drizzle.db
+      .update(sessions)
+      .set({ isActive: false })
+      .where(eq(sessions.token, refreshToken));
+
+    if (result.rowCount === 0) {
+      throw new NotFoundException('Refresh token not found');
+    }
   }
 }

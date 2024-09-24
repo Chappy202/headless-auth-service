@@ -6,7 +6,7 @@ meta {
 
 post {
   url: {{url}}/{{version}}/auth/logout
-  body: none
+  body: json
   auth: bearer
 }
 
@@ -14,6 +14,13 @@ auth:bearer {
   token: {{token}}
 }
 
+body:json {
+  {
+    "refreshToken": "{{refresh_token}}"
+  }
+}
+
 tests {
   bru.setVar("token", "");
+  bru.setVar("refresh_token","")
 }

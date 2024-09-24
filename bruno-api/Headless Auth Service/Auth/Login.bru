@@ -24,4 +24,5 @@ body:json {
 tests {
   let data = res.getBody();
   bru.setVar("token", data.access_token);
+  bru.setVar("refresh_token", data.refresh_token);
 }

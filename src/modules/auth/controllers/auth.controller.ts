@@ -8,6 +8,7 @@ import {
   ConflictException,
   Req,
   Ip,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
@@ -19,6 +20,7 @@ import {
   ApiHeader,
   ApiConsumes,
   ApiProduces,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dto/login.dto';
@@ -104,6 +106,11 @@ export class AuthController {
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Refresh token is required',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Unauthorized',
     type: ErrorResponseDto,
@@ -117,11 +124,26 @@ export class AuthController {
       example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     },
   })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: { type: 'string' },
+      },
+      required: ['refreshToken'],
+    },
+  })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
-  async logout(@Req() req: Request) {
-    const token = req.headers.authorization.split(' ')[1];
-    await this.authService.logout(token);
+  async logout(
+    @Req() req: Request,
+    @Body('refreshToken') refreshToken: string,
+  ) {
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is required');
+    }
+    const accessToken = req.headers.authorization.split(' ')[1];
+    await this.authService.logout(accessToken, refreshToken);
     return { message: 'Logged out successfully' };
   }
 }
