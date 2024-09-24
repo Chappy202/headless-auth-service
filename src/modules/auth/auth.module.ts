@@ -16,6 +16,8 @@ import { EmailModule } from '../email/email.module';
 import { FeatureToggleService } from '@/common/services/feature-toggle.service';
 import { AppModule } from '@/app.module';
 import { parseTimeToSeconds } from '@/common/utils/time.util';
+import { SessionService } from './services/session.service';
+import { SessionCleanupTask } from './tasks/session-cleanup.task';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { parseTimeToSeconds } from '@/common/utils/time.util';
     ApiKeyStrategy,
     AuthorizationService,
     FeatureToggleService,
+    SessionService,
+    SessionCleanupTask,
   ],
   controllers: [AuthController],
   exports: [AuthService, AuthorizationService],

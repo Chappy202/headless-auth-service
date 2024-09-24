@@ -23,11 +23,13 @@ import { loginHistory, sessions } from '@/infrastructure/database/schema';
 import { and, eq } from 'drizzle-orm';
 import { RefreshTokenResponseDto } from '../dto/refresh-token-response.dto';
 import { parseTimeToSeconds } from '@/common/utils/time.util';
+import { SessionService } from './session.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
+    private sessionService: SessionService,
     private jwtService: JwtService,
     private configService: ConfigService,
     private drizzle: DrizzleService,
@@ -55,18 +57,11 @@ export class AuthService {
       username: user.username,
     });
 
-    console.log(
-      `Storing token in Redis. Key: ${redisKey}, Value: ${redisValue}, Expiration: ${expirationSeconds} seconds`,
-    );
-
     try {
       await this.redisService
         .getClient()
         .set(redisKey, redisValue, 'EX', expirationSeconds);
-
-      console.log('Token successfully stored in Redis');
     } catch (error) {
-      console.error('Error storing token in Redis:', error);
       throw new InternalServerErrorException('Failed to store token');
     }
 
@@ -95,15 +90,13 @@ export class AuthService {
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
 
-    await this.drizzle.db.insert(sessions).values({
+    await this.sessionService.createSession(
       userId,
-      token: refresh_token,
+      refresh_token,
       expiresAt,
-      isActive: true,
-      lastUsedAt: new Date(),
-      userAgent: userAgent,
-      ipAddress: ip,
-    });
+      ip,
+      userAgent,
+    );
 
     return refresh_token;
   }
@@ -221,37 +214,50 @@ export class AuthService {
 
   async logout(accessToken: string, refreshToken: string): Promise<void> {
     try {
-      const decodedToken = this.jwtService.verify(accessToken) as {
-        sub: number;
-      };
-      await Promise.all([
-        this.blacklistToken(accessToken),
-        this.invalidateRefreshToken(decodedToken.sub, refreshToken),
-      ]);
-    } catch (error) {
-      // If the access token is invalid, we still try to invalidate the refresh token
-      if (error instanceof JsonWebTokenError) {
-        await this.invalidateRefreshTokenByToken(refreshToken);
+      // Always blacklist the access token
+      await this.blacklistToken(accessToken);
+
+      const session =
+        await this.sessionService.findSessionByToken(refreshToken);
+
+      if (session) {
+        // If the session exists, delete it
+        await this.sessionService.deleteSession(session.id);
       } else {
-        throw error;
+        // Log that we couldn't find the session, but don't throw an error
+        console.warn(
+          `Session not found for refresh token during logout. Token: ${refreshToken}`,
+        );
+      }
+
+      // Always clear any user-related data from Redis or other caches
+      await this.clearUserCache(accessToken);
+    } catch (error) {
+      // Log the error, but don't throw it
+      console.error('Error during logout:', error);
+
+      // Ensure the token is blacklisted even if other operations fail
+      if (!(error instanceof JsonWebTokenError)) {
+        await this.blacklistToken(accessToken);
       }
     }
+
+    // The function will always resolve, ensuring the frontend considers the user logged out
   }
 
   async refreshToken(
     oldRefreshToken: string,
+    ip: string,
+    userAgent: string,
   ): Promise<RefreshTokenResponseDto> {
-    const session = await this.drizzle.db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.token, oldRefreshToken))
-      .limit(1);
+    const session =
+      await this.sessionService.findSessionByToken(oldRefreshToken);
 
-    if (!session[0] || !session[0].isActive) {
+    if (!session) {
       throw new NotFoundException('Invalid refresh token');
     }
 
-    const user = await this.userService.findById(session[0].userId);
+    const user = await this.userService.findById(session.userId);
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -265,18 +271,12 @@ export class AuthService {
     const access_token = await this.generateToken(user);
     const refresh_token = await this.generateRefreshToken(
       user.id,
-      session[0].ipAddress,
-      session[0].userAgent,
+      ip,
+      userAgent,
     );
 
-    // Invalidate old refresh token
-    await this.invalidateRefreshToken(user.id, oldRefreshToken);
-
-    // Blacklist old access token if it exists and hasn't expired
-    const oldAccessToken = session[0].token;
-    if (oldAccessToken) {
-      await this.blacklistToken(oldAccessToken);
-    }
+    // Delete the old session
+    await this.sessionService.deleteSession(session.id);
 
     return { access_token, refresh_token };
   }
@@ -343,28 +343,13 @@ export class AuthService {
     }
   }
 
-  async invalidateRefreshToken(
-    userId: number,
-    refreshToken: string,
-  ): Promise<void> {
-    await this.drizzle.db
-      .update(sessions)
-      .set({ isActive: false })
-      .where(
-        and(eq(sessions.userId, userId), eq(sessions.token, refreshToken)),
-      );
-  }
-
-  private async invalidateRefreshTokenByToken(
-    refreshToken: string,
-  ): Promise<void> {
-    const result = await this.drizzle.db
-      .update(sessions)
-      .set({ isActive: false })
-      .where(eq(sessions.token, refreshToken));
-
-    if (result.rowCount === 0) {
-      throw new NotFoundException('Refresh token not found');
+  private async clearUserCache(accessToken: string): Promise<void> {
+    try {
+      if (accessToken) {
+        await this.redisService.getClient().del(`auth_token:${accessToken}`);
+      }
+    } catch (error) {
+      console.error('Error clearing user cache:', error);
     }
   }
 }

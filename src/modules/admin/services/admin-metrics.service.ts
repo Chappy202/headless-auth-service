@@ -35,7 +35,7 @@ export class AdminMetricsService {
       db
         .select({ count: sql<number>`cast(count(*) as int)` })
         .from(sessions)
-        .where(eq(sessions.isActive, true)),
+        .where(gte(sessions.expiresAt, new Date())),
       this.getLoginCounts(),
     ]);
 

@@ -180,8 +180,12 @@ export class AuthController {
   })
   async refreshToken(
     @Body() refreshTokenDto: RefreshTokenDto,
+    @Ip() ip: string,
+    @Req() req: Request,
   ): Promise<RefreshTokenResponseDto> {
-    return this.authService.refreshToken(refreshTokenDto.refreshToken);
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const clientIp = getClientIp(ip);
+    return this.authService.refreshToken(refreshTokenDto.refreshToken, userAgent, clientIp);
   }
 
   @Get('me')
