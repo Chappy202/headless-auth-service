@@ -15,6 +15,7 @@ import { AuthorizationService } from './services/authorization.service';
 import { EmailModule } from '../email/email.module';
 import { FeatureToggleService } from '@/common/services/feature-toggle.service';
 import { AppModule } from '@/app.module';
+import { parseTimeToSeconds } from '@/common/utils/time.util';
 
 @Module({
   imports: [
@@ -24,10 +25,17 @@ import { AppModule } from '@/app.module';
     RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRATION') },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const jwtExpirationString = configService.get<string>('JWT_EXPIRATION');
+        if (!jwtExpirationString) {
+          throw new Error('JWT_EXPIRATION is not set');
+        }
+        const expirationSeconds = parseTimeToSeconds(jwtExpirationString);
+        return {
+          secret: configService.get<string>('JWT_SECRET'),
+          signOptions: { expiresIn: expirationSeconds },
+        };
+      },
       inject: [ConfigService],
     }),
     EmailModule,

@@ -9,6 +9,7 @@ import {
   Req,
   Ip,
   BadRequestException,
+  Get,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
@@ -31,11 +32,18 @@ import { RequireFeature } from '@/common/decorators/feature-toggle.decorator';
 import { FeatureToggle } from '@/common/enums/feature-toggles.enum';
 import { FeatureToggleGuard } from '@/common/guards/feature-toggle.guard';
 import { getClientIp } from '@/common/utils/ip.util';
+import { RefreshTokenResponseDto } from '../dto/refresh-token-response.dto';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
+import { UserProfileDto } from '@/modules/users/dto/user-profile.dto';
+import { UserService } from '@/modules/users/services/user.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private userService: UserService,
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -145,5 +153,59 @@ export class AuthController {
     const accessToken = req.headers.authorization.split(' ')[1];
     await this.authService.logout(accessToken, refreshToken);
     return { message: 'Logged out successfully' };
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({
+    status: 200,
+    description: 'New access and refresh tokens',
+    type: RefreshTokenResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - User account is disabled',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not found - Invalid refresh token or user not found',
+    type: ErrorResponseDto,
+  })
+  async refreshToken(
+    @Body() refreshTokenDto: RefreshTokenDto,
+  ): Promise<RefreshTokenResponseDto> {
+    return this.authService.refreshToken(refreshTokenDto.refreshToken);
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully.',
+    type: UserProfileDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: ErrorResponseDto,
+  })
+  async getCurrentUser(@Req() req: Request): Promise<UserProfileDto> {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const tokenData = await this.authService.validateToken(token);
+      return this.userService.getUserProfile(tokenData.userId);
+    } catch (error) {
+      console.error('Error in getCurrentUser:', error);
+      throw error;
+    }
   }
 }

@@ -1,0 +1,26 @@
+meta {
+  name: Me
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{url}}/{{version}}/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "refreshToken": "{{refresh_token}}"
+  }
+}
+
+tests {
+  bru.setVar("token", "");
+  bru.setVar("refresh_token","")
+}

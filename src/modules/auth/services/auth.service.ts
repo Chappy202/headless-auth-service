@@ -20,8 +20,9 @@ import { FeatureToggleService } from '@/common/services/feature-toggle.service';
 import { EmailService } from '@/modules/email/services/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import { loginHistory, sessions } from '@/infrastructure/database/schema';
-import { getClientIp } from '@/common/utils/ip.util';
 import { and, eq } from 'drizzle-orm';
+import { RefreshTokenResponseDto } from '../dto/refresh-token-response.dto';
+import { parseTimeToSeconds } from '@/common/utils/time.util';
 
 @Injectable()
 export class AuthService {
@@ -37,24 +38,38 @@ export class AuthService {
 
   private async generateToken(user: any): Promise<string> {
     const payload = { username: user.username, sub: user.id };
-    const access_token = this.jwtService.sign(payload);
+    const jwtExpirationString =
+      this.configService.get<string>('JWT_EXPIRATION');
+    if (!jwtExpirationString) {
+      throw new Error('JWT_EXPIRATION is not set');
+    }
+    const expirationSeconds = parseTimeToSeconds(jwtExpirationString);
 
-    const expirationSeconds = parseInt(
-      this.configService.get('JWT_EXPIRATION'),
-      10,
+    const access_token = this.jwtService.sign(payload, {
+      expiresIn: expirationSeconds,
+    });
+
+    const redisKey = `auth_token:${access_token}`;
+    const redisValue = JSON.stringify({
+      userId: user.id,
+      username: user.username,
+    });
+
+    console.log(
+      `Storing token in Redis. Key: ${redisKey}, Value: ${redisValue}, Expiration: ${expirationSeconds} seconds`,
     );
-    if (isNaN(expirationSeconds)) {
-      throw new Error('Invalid JWT_EXPIRATION configuration');
+
+    try {
+      await this.redisService
+        .getClient()
+        .set(redisKey, redisValue, 'EX', expirationSeconds);
+
+      console.log('Token successfully stored in Redis');
+    } catch (error) {
+      console.error('Error storing token in Redis:', error);
+      throw new InternalServerErrorException('Failed to store token');
     }
 
-    await this.redisService
-      .getClient()
-      .set(
-        `auth_token:${access_token}`,
-        JSON.stringify({ userId: user.id, username: user.username }),
-        'EX',
-        expirationSeconds,
-      );
     return access_token;
   }
 
@@ -64,18 +79,18 @@ export class AuthService {
     userAgent: string,
   ): Promise<string> {
     const payload = { sub: userId };
+    const refreshExpirationString = this.configService.get<string>(
+      'JWT_REFRESH_EXPIRATION',
+    );
+    if (!refreshExpirationString) {
+      throw new Error('JWT_REFRESH_EXPIRATION is not set');
+    }
+    const expirationSeconds = parseTimeToSeconds(refreshExpirationString);
+
     const refresh_token = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION'),
+      expiresIn: expirationSeconds,
       secret: this.configService.get('JWT_REFRESH_SECRET'),
     });
-
-    const expirationSeconds = parseInt(
-      this.configService.get('JWT_REFRESH_EXPIRATION'),
-      10,
-    );
-    if (isNaN(expirationSeconds)) {
-      throw new Error('Invalid JWT_REFRESH_EXPIRATION configuration');
-    }
 
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + expirationSeconds);
@@ -223,6 +238,49 @@ export class AuthService {
     }
   }
 
+  async refreshToken(
+    oldRefreshToken: string,
+  ): Promise<RefreshTokenResponseDto> {
+    const session = await this.drizzle.db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.token, oldRefreshToken))
+      .limit(1);
+
+    if (!session[0] || !session[0].isActive) {
+      throw new NotFoundException('Invalid refresh token');
+    }
+
+    const user = await this.userService.findById(session[0].userId);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isDisabled) {
+      throw new ForbiddenException('User account is disabled');
+    }
+
+    // Generate new tokens
+    const access_token = await this.generateToken(user);
+    const refresh_token = await this.generateRefreshToken(
+      user.id,
+      session[0].ipAddress,
+      session[0].userAgent,
+    );
+
+    // Invalidate old refresh token
+    await this.invalidateRefreshToken(user.id, oldRefreshToken);
+
+    // Blacklist old access token if it exists and hasn't expired
+    const oldAccessToken = session[0].token;
+    if (oldAccessToken) {
+      await this.blacklistToken(oldAccessToken);
+    }
+
+    return { access_token, refresh_token };
+  }
+
   private async createLoginHistory(
     userId: number,
     ip: string,
@@ -260,19 +318,29 @@ export class AuthService {
   }
 
   async validateToken(token: string): Promise<any> {
-    const isBlacklisted = await this.isTokenBlacklisted(token);
-    if (isBlacklisted) {
-      throw new UnauthorizedException('Token is blacklisted');
-    }
+    try {
+      const isBlacklisted = await this.isTokenBlacklisted(token);
+      if (isBlacklisted) {
+        throw new UnauthorizedException('Token is blacklisted');
+      }
 
-    const tokenData = await this.redisService
-      .getClient()
-      .get(`auth_token:${token}`);
-    if (!tokenData) {
-      throw new UnauthorizedException('Invalid token');
-    }
+      const tokenData = await this.redisService
+        .getClient()
+        .get(`auth_token:${token}`);
+      if (!tokenData) {
+        throw new UnauthorizedException('Token not found in Redis');
+      }
 
-    return JSON.parse(tokenData);
+      // Verify the token
+      const decoded = this.jwtService.verify(token);
+
+      return JSON.parse(tokenData);
+    } catch (error) {
+      if (error instanceof JsonWebTokenError) {
+        throw new UnauthorizedException('Invalid JWT token: ' + error.message);
+      }
+      throw error;
+    }
   }
 
   async invalidateRefreshToken(
