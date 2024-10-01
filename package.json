@@ -45,7 +45,7 @@
     "drizzle-orm": "^0.31.4",
     "helmet": "^7.1.0",
     "ioredis": "^5.4.1",
-    "nodemailer": "^6.9.14",
+    "nodemailer": "^6.9.15",
     "otplib": "^12.0.1",
     "passport": "^0.7.0",
     "passport-headerapikey": "^1.2.2",
