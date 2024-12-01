@@ -52,7 +52,7 @@
     "passport-http-bearer": "^1.0.1",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
-    "pg": "^8.13.0",
+    "pg": "^8.13.1",
     "postgres": "^3.4.4",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.0",
