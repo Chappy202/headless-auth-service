@@ -1,3 +1,7 @@
+# Deprecated
+
+I decided to deprecate and stop supporting and using the api in favour of [better-auth](https://github.com/better-auth/better-auth). Better-auth has support for everything I wanted to achieve with this service, the most important part being self-hosting & scaling. I might release plugins to support stuff like resources which this api supported in the future for better-auth. 
+
 # Headless Auth Service
 
 A robust, scalable, and secure authentication service built with NestJS, Drizzle ORM, and Passport.js. This headless service provides a complete authentication and authorization solution that can be easily integrated with any frontend compatible with JWT.
